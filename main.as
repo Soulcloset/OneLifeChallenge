@@ -8,7 +8,7 @@
 */
 
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
-bool WindowVisible;
+bool WindowVisible = true;
 
 //[Setting category="General" name="start challenge?" description="When checked, the 1LC window will be visible."]
 bool PowerSwitch = false; //this is used to enable/disable the challenge, the commented line above is used to make it part of the settings
