@@ -1,0 +1,8 @@
+[meta]
+name = "One-Life Challenge"
+author = "Soulcloset"
+category = "Race"
+version = "1.0"
+
+[script]
+dependencies = [ "MXRandom", "MLHook", "MLFeedRaceData" ]
