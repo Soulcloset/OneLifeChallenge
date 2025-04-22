@@ -1,15 +1,8 @@
 /*
     One-Life Challenge
     TODO:
-    - Get current finish time, add points based on medal achieved ✅
-    - Reset points to 0 on respawn/give up ✅
-    - Settings menu enable/disable ✅❌
-        - Buttons on UI to start/stop, rather than in settings menu. Start button should reset points to 0 
-    - Random map picking ✅
-        - Add automatic random map picking, rather than a manual button
     - Skip button
-    - Add UI to show points (always shown when enabled)
-    - Start/stop functionality (in UI)
+        - Validate that current map can be skipped without penalty using MX integration
     - In UI, indicate when points are added with fancy text for medal name
 
 */
@@ -147,6 +140,7 @@ void ResetPoints(){
         if(verboseMode){print("New Session PB: " + PBPoints);}
         if(PBPoints > AllTimeBest){
             AllTimeBest = PBPoints;
+            Meta::SaveSettings();
             if(verboseMode){print("New All Time Best: " + AllTimeBest);}
         }
     }
@@ -337,6 +331,7 @@ void RenderMenu()
             if(verboseMode){print("Personal Best was " + AllTimeBest + ", reset to 0");}
             UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
             AllTimeBest = 0;
+            Meta::SaveSettings();
         }
 
         if (UI::MenuItem("1LC - Next Random Map DEBUG")) {
