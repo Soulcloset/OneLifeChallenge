@@ -13,6 +13,12 @@ bool WindowVisible = true;
 //[Setting category="General" name="start challenge?" description="When checked, the 1LC window will be visible."]
 bool PowerSwitch = false; //this is used to enable/disable the challenge, the commented line above is used to make it part of the settings
 
+[Setting category="Gameplay" name="Unrestricted Skips" description="When checked, all maps can be skipped without penalty. When unchecked, you may only skip maps that are longer than the skip threshold."]
+bool AnySkip = false;
+
+[Setting category="Gameplay" name="Skip Threshold" description="Minimum length a map must have to be skippable without penalty. Default is 3 minutes, times are expressed as hh:mm:ss.mmm without symbols or leading zeroes (ex. 3m45s678ms is 345678)." min=1000]
+int skipThreshold = 300000; //3 minutes is 300000
+
 [Setting category="Developers" name="Debug Mode" description="Enable/disable debug mode for 1LC. This will show the debug options in the Openplanet Plugins menu, including the ability to reset your personal best permanently."]
 bool debugMode = false;
 
@@ -29,6 +35,8 @@ int tempPoints = 0; //0 is an incomplete map
 int LastRun = -1;
 int totalPoints = 0;
 int PBPoints = 0; //session PB
+int curAuthor = -1;
+
 
 string curMap = "";
 //int LastStart = -1; this was used in an old version of GiveUpTracker()
@@ -38,7 +46,8 @@ bool resetProtection = false;
 
 //ui variables
 vec2 scale = vec2(100, 40);
-vec4 warningColor = vec4(1, 0.1, 0.1, 1.0); //red
+vec4 warningColor = vec4(1, 0.1, 0.1, 0.8); //red
+vec4 successColor = vec4(0.1, 1, 0.1, 0.8); //green
 float disabledHue = 336.0;
 float disabledSat = 0.98;
 float disabledVal = 0.31;
@@ -84,6 +93,7 @@ int GetMedalEarned(){
     //set function vars for each medal time whenever a map is loaded
     if(map!is null){
     authorTime = map.TMObjective_AuthorTime;
+    curAuthor = authorTime;
     goldTime = map.TMObjective_GoldTime;
     silverTime = map.TMObjective_SilverTime;
     bronzeTime = map.TMObjective_BronzeTime;
@@ -141,6 +151,7 @@ void ResetPoints(){
         if(PBPoints > AllTimeBest){
             AllTimeBest = PBPoints;
             Meta::SaveSettings();
+            UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  5000);
             if(verboseMode){print("New All Time Best: " + AllTimeBest);}
         }
     }
@@ -165,7 +176,9 @@ bool RespawnTracker(){
         int CPRespawns = playerScore.NbRespawnsRequested;
         if (CPRespawns > 0){
             if(verboseMode){print("Respawns: " + CPRespawns + ", calling ResetPoints()");}
+            UI::ShowNotification("One-Life Challenge", "We caught you cheating! Say goodbye to your " + PBPoints + " point run.", warningColor,  10000);
             ResetPoints();
+            PowerSwitch = false;
         }
         else {
             return false;
@@ -280,6 +293,32 @@ void GiveUpTracker(){
 }
 */
 
+bool SkipCheck(){
+    //this function will be used to check whether the current map can be skipped without penalty. True = it can, False = it cannot.
+    if(AnySkip){
+        return true;
+    }
+    CTrackMania@ app = cast<CTrackMania>(GetApp());
+    auto map = app.RootMap;
+    //if(verboseMode && map!is null){print("Map time: " + map.TMObjective_AuthorTime);}
+    if(map !is null){
+        if(map.TMObjective_AuthorTime > skipThreshold){
+            //if(verboseMode){print("SkipCheck Scenario 1");}
+            return true; //map is longer than 3 minutes, can be skipped
+        }
+        else {
+            //if(verboseMode){print("SkipCheck Scenario 2");}
+            return false; //map is shorter than 3 minutes, cannot be skipped
+        }
+    }
+    else {
+        //if(verboseMode){print("SkipCheck Scenario 3");}
+        return false; //no map loaded, cannot be skipped
+    }
+    //if(verboseMode){print("SkipCheck Scenario 4");}
+    return true; //default
+}
+
 void Render(){
     if (WindowVisible) {
         UI::Begin("1LC", UI::WindowFlags::AlwaysAutoResize);
@@ -290,6 +329,7 @@ void Render(){
             //challenge stopped
             if(UI::ButtonColored("Start", enabledHue , enabledSat, enabledVal, scale)){
                 MXRandom::LoadRandomMap();
+                if(verboseMode){print("Challenge started!");}
                 PowerSwitch = true;
                 UI::End();
                 return;
@@ -306,9 +346,17 @@ void Render(){
                 UI::End();
                 return;
             }
-            if (UI::Button("Skip Map", scale)){
-                MXRandom::LoadRandomMap();
+            if(SkipCheck()){
+                if (UI::ButtonColored("Skip Map", enabledHue , enabledSat, enabledVal, scale)){
+                    if(verboseMode){print("Attempted to skip, map time: " + curAuthor);}
+                    MXRandom::LoadRandomMap();
+                }
             }
+            else {
+                UI::ButtonColored("Skip Map", disabledHue , disabledSat, disabledVal, scale);
+            }
+
+            
         }
 
         
@@ -321,7 +369,7 @@ void RenderMenu()
     CTrackMania@ app = cast<CTrackMania>(GetApp());
     auto map = app.RootMap;
 
-    if(debugMode){if(UI::BeginMenu(Icons::Heart + "1LC - One-Life Challenge")){
+    if(debugMode){if(UI::BeginMenu(Icons::Heart + " 1LC - One-Life Challenge")){
         
         if (UI::MenuItem("1LC - Reset Run DEBUG")) {
             ResetPoints();
