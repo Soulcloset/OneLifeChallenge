@@ -18,3 +18,7 @@ Author Medal - 5 points
 Your PB will automatically be updated as you complete runs, but make sure to retire or click the Stop button to save your score before ending a run to make sure it is saved between sessions.
 
 GLHF!
+
+---
+
+Thanks to Jumper471 for permission to turn their idea into a playable gamemode, and to XertroV, Fort, and Ezio from the Openplanet Discord for the help making it a reality!
