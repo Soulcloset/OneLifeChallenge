@@ -21,6 +21,9 @@ bool verboseMode = false; //debug mode for testing;
 [Setting hidden]
 int AllTimeBest = 0;
 
+[Setting hidden]
+int PBSkips = 0; //number of skips that have been used in the AllTimeBest run
+
 bool PowerSwitch = false;
 bool HandledRun = false;
 int curTime = -1;
@@ -29,7 +32,9 @@ int LastRun = -1;
 int totalPoints = 0;
 int PBPoints = 0; //session PB
 int curAuthor = -1;
+int curSkips = 0;
 string medalMessage = "";
+string PBSkipString = " skips)";
 
 string curMap = "";
 bool spawnLatch = false;
@@ -163,12 +168,14 @@ void ResetPoints(){
         if(verboseMode){print("New Session PB: " + PBPoints);}
         if(PBPoints > AllTimeBest){
             AllTimeBest = PBPoints;
+            PBSkips = curSkips;
             Meta::SaveSettings();
             UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
             if(verboseMode){print("New All Time Best: " + AllTimeBest);}
         }
     }
     totalPoints = 0;
+    curSkips = 0;
     PowerSwitch = false;
     if(verboseMode){print("Points reset to 0");}
 }
@@ -266,8 +273,12 @@ void Render(){
     if (WindowVisible) {
         UI::Begin("1LC", UI::WindowFlags::AlwaysAutoResize);
         UI::Text("Total Points: " + totalPoints);
-        UI::Text("Personal Best: " + AllTimeBest);
-
+        if(PBSkips > 0){
+            UI::Text("Personal Best: " + AllTimeBest + " (" + PBSkips + PBSkipString);
+        }
+        else {
+            UI::Text("Personal Best: " + AllTimeBest);
+        }
 
         if(!PowerSwitch){
             //challenge stopped
@@ -292,6 +303,7 @@ void Render(){
             if(SkipCheck()){
                 if (UI::ButtonColored("Skip Map", enabledHue , enabledSat, enabledVal, scale)){
                     if(verboseMode){print("Attempted to skip, map time: " + curAuthor);}
+                    curSkips += 1;
                     MXRandom::LoadRandomMap();
                 }
             }
