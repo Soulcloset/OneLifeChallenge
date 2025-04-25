@@ -63,7 +63,7 @@ void Main()
         tempPoints = GetMedalEarned();
         if(tempPoints > 0 && !RespawnTracker()){
             totalPoints += tempPoints;
-            medalNotification(totalPoints);
+            medalNotification(tempPoints);
             if(verboseMode){print("Total points: " + totalPoints);}
             tempPoints = 0;
         }

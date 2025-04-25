@@ -2,7 +2,7 @@
 name = "One-Life Challenge"
 author = "Soulcloset"
 category = "Race"
-version = "1.2.1"
+version = "1.2.2"
 
 [script]
 dependencies = [ "MXRandom", "MLHook", "MLFeedRaceData" ]
