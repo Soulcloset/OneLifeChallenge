@@ -334,6 +334,7 @@ void RenderMenu()
             if(verboseMode){print("Personal Best was " + AllTimeBest + ", reset to 0");}
             UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
             AllTimeBest = 0;
+            PBSkips = 0;
             Meta::SaveSettings();
         }
 
