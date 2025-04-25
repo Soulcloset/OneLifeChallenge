@@ -1,15 +1,10 @@
 /*
     One-Life Challenge
-    TODO:
-    - In UI, indicate when points are added with fancy text for medal name
-
+    by Soulcloset
 */
 
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
 bool WindowVisible = true;
-
-//[Setting category="General" name="start challenge?" description="When checked, the 1LC window will be visible."]
-bool PowerSwitch = false; //this is used to enable/disable the challenge, the commented line above is used to make it part of the settings
 
 [Setting category="Gameplay" name="Unrestricted Skips" description="When checked, all maps can be skipped without penalty. When unchecked, you may only skip maps that are longer than the skip threshold."]
 bool AnySkip = false;
@@ -26,7 +21,7 @@ bool verboseMode = false; //debug mode for testing;
 [Setting hidden]
 int AllTimeBest = 0;
 
-
+bool PowerSwitch = false;
 bool HandledRun = false;
 int curTime = -1;
 int tempPoints = 0; //0 is an incomplete map
@@ -37,8 +32,6 @@ int curAuthor = -1;
 string medalMessage = "";
 
 string curMap = "";
-//int LastStart = -1; this was used in an old version of GiveUpTracker()
-//bool GaveUp = false; this was used in an old version of GiveUpTracker()
 bool spawnLatch = false;
 bool resetProtection = false;
 
@@ -61,7 +54,6 @@ void Main()
     //define the map as the current map
     auto map = app.RootMap;
     while(true){
-        //print("WindowVisible: "+ WindowVisible);
         if(PowerSwitch){
         tempPoints = GetMedalEarned();
         if(tempPoints > 0 && !RespawnTracker()){
@@ -78,6 +70,7 @@ void Main()
 }
 
 int GetMedalEarned(){
+    //portion of this function is taken from MXRandom, with permission from Fort (ty!)
     auto app = cast<CTrackMania>(GetApp());
     CGamePlayground@ playground = cast<CGamePlayground>(app.CurrentPlayground);
     CSmArenaRulesMode@ script = cast<CSmArenaRulesMode>(app.PlaygroundScript);
@@ -131,13 +124,9 @@ int GetMedalEarned(){
                 else if(time <= bronzeTime) {medal = 2;}
                 else medal = 1;
 
-                //medalNotification(medal);
-
                 HandledRun = true;
                 LastRun = time;
-                //if (GaveUp){
-                //    return 0;
-                //}
+
                 MXRandom::LoadRandomMap();
                 return medal;
     }
@@ -257,15 +246,14 @@ bool SkipCheck(){
     }
     CTrackMania@ app = cast<CTrackMania>(GetApp());
     auto map = app.RootMap;
-    //if(verboseMode && map!is null){print("Map time: " + map.TMObjective_AuthorTime);}
     if(map !is null){
         if(map.TMObjective_AuthorTime > skipThreshold){
             //if(verboseMode){print("SkipCheck Scenario 1");}
-            return true; //map is longer than 3 minutes, can be skipped
+            return true; //map is longer than threshold, can be skipped
         }
         else {
             //if(verboseMode){print("SkipCheck Scenario 2");}
-            return false; //map is shorter than 3 minutes, cannot be skipped
+            return false; //map is shorter than threshold, cannot be skipped
         }
     }
     else {
@@ -298,7 +286,6 @@ void Render(){
             UI::ButtonColored("Start", disabledHue , disabledSat, disabledVal, scale);
             if(UI::ButtonColored("Stop", enabledHue , enabledSat, enabledVal, scale)){
                 ResetPoints();
-                //PowerSwitch = false;
                 UI::End();
                 return;
             }
