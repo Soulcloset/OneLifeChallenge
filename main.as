@@ -270,6 +270,10 @@ bool SkipCheck(){
 }
 
 void Render(){
+    auto app = cast<CTrackMania>(GetApp());
+    auto map = app.RootMap;
+    auto RaceData = MLFeed::GetRaceData_V4();
+
     if (WindowVisible) {
         UI::Begin("1LC", UI::WindowFlags::AlwaysAutoResize);
         UI::Text("Total Points: " + totalPoints);
@@ -283,14 +287,35 @@ void Render(){
         if(!PowerSwitch){
             //challenge stopped
             if(UI::ButtonColored("Start", enabledHue , enabledSat, enabledVal, scale)){
-                MXRandom::LoadRandomMap();
-                if(verboseMode){print("Challenge started!");}
-                PowerSwitch = true;
-                UI::End();
-                return;
+                try{
+                    auto player = cast<MLFeed::PlayerCpInfo_V4>(RaceData.SortedPlayers_Race[0]);
+                    MLFeed::SpawnStatus currentSpawnStatus = player.SpawnStatus;
+                    if(currentSpawnStatus == MLFeed::SpawnStatus::Spawning){
+                        UI::ShowNotification("One-Life Challenge", "You cannot start the challenge while spawning! Try again.", warningColor,  5000);
+                        if(verboseMode){print("Attempted to start while spawning!");}
+                        UI::End();
+                        return;
+                    }
+                    else{
+                        MXRandom::LoadRandomMap();
+                        if(verboseMode){print("Challenge started!");}
+                        PowerSwitch = true;
+                        UI::End();
+                        return;
+                    }
+                }
+                catch{
+                    MXRandom::LoadRandomMap();
+                    if(verboseMode){print("Challenge started!");}
+                    PowerSwitch = true;
+                    UI::End();
+                    return;
+                }
+                
             }
             UI::ButtonColored("Stop", disabledHue , disabledSat, disabledVal, scale);
             UI::ButtonColored("Skip Map", disabledHue , disabledSat, disabledVal, scale);
+            
         }
         else {
             //challenge started
