@@ -326,7 +326,7 @@ void Render(){
                 
             }
             UI::ButtonColored("Stop", disabledHue , disabledSat, disabledVal, scale);
-            UI::ButtonColored("Skip Map", disabledHue , disabledSat, disabledVal, scale);
+            //UI::ButtonColored("Free Skip", disabledHue , disabledSat, disabledVal, scale); //disabling useless skip button when challenge is stopped
             
         }
         else {
@@ -338,14 +338,14 @@ void Render(){
                 return;
             }
             if(SkipCheck()){
-                if (UI::ButtonColored("Skip Map", enabledHue , enabledSat, enabledVal, scale)){
+                if (UI::ButtonColored("Free Skip", enabledHue , enabledSat, enabledVal, scale)){
                     if(verboseMode){print("Attempted to skip, map time: " + curAuthor);}
                     curSkips += 1;
                     MXRandom::LoadRandomMap();
                 }
             }
             else {
-                UI::ButtonColored("Skip Map", disabledHue , disabledSat, disabledVal, scale);
+                UI::ButtonColored("Free Skip", disabledHue , disabledSat, disabledVal, scale);
             }
 
             if(totalPoints > 5) {
