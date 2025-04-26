@@ -309,8 +309,7 @@ void Render(){
                     if(verboseMode){print("Challenge started!");}
                     PowerSwitch = true;
                     UI::End();
-                    return;
-                }
+                    return;                }
                 
             }
             UI::ButtonColored("Stop", disabledHue , disabledSat, disabledVal, scale);
@@ -334,6 +333,18 @@ void Render(){
             }
             else {
                 UI::ButtonColored("Skip Map", disabledHue , disabledSat, disabledVal, scale);
+            }
+
+            if(totalPoints > 5) {
+                if (UI::ButtonColored("5-Point Skip", enabledHue , enabledSat, enabledVal, scale)){
+                    if(verboseMode){print("Attempted to 5-point skip, map time: " + curAuthor);}
+                    curSkips += 1;
+                    totalPoints -= 5;
+                    MXRandom::LoadRandomMap();
+                }
+            }
+            else {
+                UI::ButtonColored("5-Point Skip", disabledHue , disabledSat, disabledVal, scale);
             }
 
             
