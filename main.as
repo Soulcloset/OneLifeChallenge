@@ -24,6 +24,8 @@ int AllTimeBest = 0;
 [Setting hidden]
 int PBSkips = 0; //number of skips that have been used in the AllTimeBest run
 
+const bool mapAccess = Permissions::PlayLocalMap(); //can the current login load arbitrary maps?
+
 bool PowerSwitch = false;
 bool HandledRun = false;
 int curTime = -1;
@@ -53,11 +55,20 @@ float enabledVal = 0.80;
 
 void Main()
 {
+    if(!mapAccess){
+        UI::ShowNotification("One-Life Challenge", "Club Access is required to play One-Life Challenge!", warningColor,  10000);
+        return;
+    }
+    else{
+        if(verboseMode){print("Verified that the user has Standard or Club Access, enabled plugin.");}
+    }
+    
     print("Loaded 1LC - One-Life Challenge!");
     CTrackMania@ app = cast<CTrackMania>(GetApp());
 
     //define the map as the current map
     auto map = app.RootMap;
+    
     while(true){
         if(PowerSwitch){
         tempPoints = GetMedalEarned();
@@ -75,6 +86,7 @@ void Main()
 }
 
 int GetMedalEarned(){
+    if(!mapAccess){return 0;}
     //portion of this function is taken from MXRandom, with permission from Fort (ty!)
     auto app = cast<CTrackMania>(GetApp());
     CGamePlayground@ playground = cast<CGamePlayground>(app.CurrentPlayground);
@@ -270,6 +282,7 @@ bool SkipCheck(){
 }
 
 void Render(){
+    if(!mapAccess){return;}
     auto app = cast<CTrackMania>(GetApp());
     auto map = app.RootMap;
     auto RaceData = MLFeed::GetRaceData_V4();
@@ -359,8 +372,15 @@ void RenderMenu()
 {
     CTrackMania@ app = cast<CTrackMania>(GetApp());
     auto map = app.RootMap;
+    if(!mapAccess){
+        if (UI::BeginMenu(Icons::Heart + " 1LC - One-Life Challenge")) {
+        UI::Text("Warning: Club Required");
+        UI::TextWrapped("Sorry, this plugin won't work because you don't have club access :(.");
+        UI::EndMenu();
+}
+    }
 
-    if(debugMode){if(UI::BeginMenu(Icons::Heart + " 1LC - One-Life Challenge")){
+    if(mapAccess && debugMode){if(UI::BeginMenu(Icons::Heart + " 1LC - One-Life Challenge")){
         
         if (UI::MenuItem("1LC - Reset Run DEBUG")) {
             ResetPoints();
@@ -377,6 +397,12 @@ void RenderMenu()
         if (UI::MenuItem("1LC - Next Random Map DEBUG")) {
             MXRandom::LoadRandomMap();
         }
+
+        if (UI::MenuItem("1LC - Check Map Access DEBUG")) {
+            if(verboseMode){print(mapAccess);}
+            UI::ShowNotification("One-Life Challenge", "This login can load arbitrary maps? " + mapAccess, warningColor,  5000);
+        }
+
         UI::EndMenu();
     }}
 }
