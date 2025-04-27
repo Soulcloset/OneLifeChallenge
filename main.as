@@ -15,7 +15,7 @@ uint skipThreshold = 300000; //3 minutes is 300000
 [Setting category="Developers" name="Debug Mode" description="Enable/disable debug mode for 1LC. This will show the debug options in the Openplanet Plugins menu, including the ability to reset your personal best permanently."]
 bool debugMode = false;
 
-[Setting category="Developers" name="Verbose Mode" description="Enable/disable verbose logging to the Openplanet console (Warning: this will spam the console)"]
+[Setting category="Developers" name="Verbose Mode" description="Enable/disable verbose logging to the Openplanet console. (Warning: this will spam the console)"]
 bool verboseMode = false; //debug mode for testing;
 
 [Setting hidden]
@@ -85,8 +85,15 @@ void Main()
 
 }
 
+void NextMap(){
+    //called any time a random map is needed, to consolidate permissions checking
+    if(!mapAccess){return;}
+    else{
+        MXRandom::LoadRandomMap();
+    }
+}
+
 int GetMedalEarned(){
-    if(!mapAccess){return 0;}
     //portion of this function is taken from MXRandom, with permission from Fort (ty!)
     auto app = cast<CTrackMania>(GetApp());
     CGamePlayground@ playground = cast<CGamePlayground>(app.CurrentPlayground);
@@ -144,7 +151,7 @@ int GetMedalEarned(){
                 HandledRun = true;
                 LastRun = time;
 
-                MXRandom::LoadRandomMap();
+                NextMap();
                 return medal;
     }
     return 0;
@@ -310,7 +317,7 @@ void Render(){
                         return;
                     }
                     else{
-                        MXRandom::LoadRandomMap();
+                        NextMap();
                         if(verboseMode){print("Challenge started!");}
                         PowerSwitch = true;
                         UI::End();
@@ -318,7 +325,7 @@ void Render(){
                     }
                 }
                 catch{
-                    MXRandom::LoadRandomMap();
+                    NextMap();
                     if(verboseMode){print("Challenge started!");}
                     PowerSwitch = true;
                     UI::End();
@@ -341,7 +348,7 @@ void Render(){
                 if (UI::ButtonColored("Free Skip", enabledHue , enabledSat, enabledVal, scale)){
                     if(verboseMode){print("Attempted to skip, map time: " + curAuthor);}
                     curSkips += 1;
-                    MXRandom::LoadRandomMap();
+                    NextMap();
                 }
             }
             else {
@@ -353,7 +360,7 @@ void Render(){
                     if(verboseMode){print("Attempted to 5-point skip, map time: " + curAuthor);}
                     curSkips += 1;
                     totalPoints -= 5;
-                    MXRandom::LoadRandomMap();
+                    NextMap();
                 }
             }
             else {
@@ -375,34 +382,45 @@ void RenderMenu()
     if(!mapAccess){
         if (UI::BeginMenu(Icons::Heart + " 1LC - One-Life Challenge")) {
         UI::Text("Warning: Club Required");
-        UI::TextWrapped("Sorry, this plugin won't work because you don't have club access :(.");
+        UI::TextWrapped("Sorry, this plugin won't work because you don't have club access :(");
         UI::EndMenu();
 }
     }
 
-    if(mapAccess && debugMode){if(UI::BeginMenu(Icons::Heart + " 1LC - One-Life Challenge")){
+    if(mapAccess){if(UI::BeginMenu(Icons::Heart + " 1LC - One-Life Challenge")){
         
-        if (UI::MenuItem("1LC - Reset Run DEBUG")) {
-            ResetPoints();
+        if(WindowVisible){
+            if(UI::MenuItem("Window Visible? " + Icons::Check )){
+                WindowVisible = !WindowVisible;
+            }
         }
-
-        if (UI::MenuItem("1LC - Reset PB (PERMANENT!)")){
-            if(verboseMode){print("Personal Best was " + AllTimeBest + ", reset to 0");}
-            UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
-            AllTimeBest = 0;
-            PBSkips = 0;
-            Meta::SaveSettings();
+        else {
+            if(UI::MenuItem("Window Visible? " + Icons::Times )){
+                WindowVisible = !WindowVisible;
+            }
         }
+        if(debugMode){
+            if (UI::MenuItem("1LC - Reset Run DEBUG")) {
+                ResetPoints();
+            }
 
-        if (UI::MenuItem("1LC - Next Random Map DEBUG")) {
-            MXRandom::LoadRandomMap();
+            if (UI::MenuItem("1LC - Reset PB (PERMANENT!)")){
+                if(verboseMode){print("Personal Best was " + AllTimeBest + ", reset to 0");}
+                UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
+                AllTimeBest = 0;
+                PBSkips = 0;
+                Meta::SaveSettings();
+            }
+
+            if (UI::MenuItem("1LC - Next Random Map DEBUG")) {
+                NextMap();
+            }
+
+            if (UI::MenuItem("1LC - Check Map Access DEBUG")) {
+                if(verboseMode){print(mapAccess);}
+                UI::ShowNotification("One-Life Challenge", "This login can load arbitrary maps? " + mapAccess, warningColor,  5000);
+            }
         }
-
-        if (UI::MenuItem("1LC - Check Map Access DEBUG")) {
-            if(verboseMode){print(mapAccess);}
-            UI::ShowNotification("One-Life Challenge", "This login can load arbitrary maps? " + mapAccess, warningColor,  5000);
-        }
-
         UI::EndMenu();
     }}
 }
