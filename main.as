@@ -76,6 +76,7 @@ void Main()
             totalPoints += tempPoints;
             medalNotification(tempPoints);
             if(verboseMode){print("Total points: " + totalPoints);}
+            NextMap();
             tempPoints = 0;
         }
         }
@@ -151,7 +152,7 @@ int GetMedalEarned(){
                 HandledRun = true;
                 LastRun = time;
 
-                NextMap();
+                //NextMap();
                 return medal;
     }
     return 0;
