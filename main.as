@@ -19,7 +19,7 @@ bool debugMode = false;
 bool verboseMode = false; //debug mode for testing;
 
 [Setting hidden]
-int AllTimeBest = 0;
+int AllTimeBest = 0; //personal best from all runs, saved to settings
 
 [Setting hidden]
 int PBSkips = 0; //number of skips that have been used in the AllTimeBest run
@@ -31,7 +31,7 @@ bool HandledRun = false;
 int curTime = -1;
 int tempPoints = 0; //0 is an incomplete map
 int LastRun = -1;
-int totalPoints = 0;
+int totalPoints = 0; //current run's running point total
 int PBPoints = 0; //session PB
 int curAuthor = -1;
 int curSkips = 0;
@@ -183,21 +183,26 @@ void medalNotification(int medal){
 
 void ResetPoints(){
     //check if current point value is your session PB
-    if (totalPoints > PBPoints){
-        PBPoints = totalPoints;
-        if(verboseMode){print("New Session PB: " + PBPoints);}
-        if(PBPoints > AllTimeBest){
-            AllTimeBest = PBPoints;
-            PBSkips = curSkips;
-            Meta::SaveSettings();
-            UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
-            if(verboseMode){print("New All Time Best: " + AllTimeBest);}
-        }
+    SessionPBUpdate();
+    if(PBPoints > AllTimeBest){
+        AllTimeBest = PBPoints;
+        PBSkips = curSkips;
+        Meta::SaveSettings();
+        UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
+        if(verboseMode){print("New All Time Best: " + AllTimeBest);}
     }
+
     totalPoints = 0;
     curSkips = 0;
     PowerSwitch = false;
     if(verboseMode){print("Points reset to 0");}
+}
+
+void SessionPBUpdate(){
+    if (totalPoints > PBPoints){
+        PBPoints = totalPoints;
+        if(verboseMode){print("New Session PB saved: " + PBPoints);}
+    }
 }
 
 bool RespawnTracker(){
@@ -359,6 +364,7 @@ void Render(){
             if(totalPoints > 5) {
                 if (UI::ButtonColored("5-Point Skip", enabledHue , enabledSat, enabledVal, scale)){
                     if(verboseMode){print("Attempted to 5-point skip, map time: " + curAuthor);}
+                    SessionPBUpdate();
                     curSkips += 1;
                     totalPoints -= 5;
                     NextMap();
