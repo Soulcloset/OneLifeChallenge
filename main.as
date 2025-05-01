@@ -9,8 +9,8 @@ bool WindowVisible = true;
 [Setting category="Gameplay" name="Unrestricted Skips" description="When checked, all maps can be skipped without penalty. When unchecked, you may only skip maps that are longer than the skip threshold."]
 bool AnySkip = false;
 
-[Setting category="Gameplay" name="Skip Threshold" description="Minimum length a map must have to be skippable without penalty. Default is 3 minutes, times are expressed as hh:mm:ss.mmm without symbols or leading zeroes (ex. 3m45s678ms is 345678)." min=1000]
-uint skipThreshold = 300000; //3 minutes is 300000
+[Setting category="Gameplay" name="Skip Threshold" description="Minimum length a map must have to be skippable without penalty. Default is 3 minutes, time in milliseconds. (ex. 60000 = 1 minute, 180000 = 3 minutes, 300000 = 5 minutes, etc.)" min=1000]
+uint skipThreshold = 180000; //3 minutes is 180000
 
 [Setting category="Developers" name="Debug Mode" description="Enable/disable debug mode for 1LC. This will show the debug options in the Openplanet Plugins menu, including the ability to reset your personal best permanently."]
 bool debugMode = false;
