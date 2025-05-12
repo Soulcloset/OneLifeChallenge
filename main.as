@@ -1,6 +1,11 @@
 /*
     One-Life Challenge
     by Soulcloset
+
+    TODO:
+    - Create gamemode selection (multiple start buttons?)
+    - Designate current function as one mode (needs a name)
+    - Create new gamemode with progressive point requirements for x maps completed
 */
 
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
@@ -19,14 +24,19 @@ bool debugMode = false;
 bool verboseMode = false; //debug mode for testing;
 
 [Setting hidden]
-int AllTimeBest = 0; //personal best from all runs, saved to settings
+int AllTimeBest = 0; //personal best from Classic Mode, saved to settings
 
 [Setting hidden]
-int PBSkips = 0; //number of skips that have been used in the AllTimeBest run
+int PBSkips = 0; //number of skips that have been used in the AllTimeBest run in Classic Mode
+
+[Setting hidden]
+int ProgressiveBest = 0; //personal best from Progressive Mode, saved to settings
 
 const bool mapAccess = Permissions::PlayLocalMap(); //can the current login load arbitrary maps?
 
-bool PowerSwitch = false;
+bool ClassicActive = false; //formerly PowerSwitch, marks whether classic mode is active
+bool ProgressiveActive = false; //marks whether progressive mode is active
+
 bool HandledRun = false;
 int curTime = -1;
 int tempPoints = 0; //0 is an incomplete map
@@ -41,6 +51,10 @@ string PBSkipString = " skips)";
 string curMap = "";
 bool spawnLatch = false;
 bool resetProtection = false;
+
+//progressive mode variables
+int SkipTokens = 0; //Progressive Mode number of free skips available
+int mapCounter = 0; //counts how many maps have been played this run
 
 //ui variables
 vec2 scale = vec2(100, 40);
@@ -70,15 +84,29 @@ void Main()
     auto map = app.RootMap;
     
     while(true){
-        if(PowerSwitch){
-        tempPoints = GetMedalEarned();
-        if(tempPoints > 0 && !RespawnTracker()){
-            totalPoints += tempPoints;
-            medalNotification(tempPoints);
-            if(verboseMode){print("Total points: " + totalPoints);}
-            NextMap();
-            tempPoints = 0;
+        if(ClassicActive){
+            ProgressiveActive = false;
+            tempPoints = GetMedalEarned();
+            if(tempPoints > 0 && !RespawnTracker()){
+                totalPoints += tempPoints;
+                medalNotification(tempPoints);
+                if(verboseMode){print("Total points: " + totalPoints);}
+                NextMap();
+                tempPoints = 0;
+            }
         }
+        if(ProgressiveActive){
+            ClassicActive = false;
+            tempPoints = GetMedalEarned();
+            if(tempPoints > 0 && !RespawnTracker()){
+                totalPoints += tempPoints;
+                medalNotification(tempPoints);
+                if(verboseMode){print("Total points: " + totalPoints);}
+                mapCounter++;
+                if(verboseMode){print("Map count incremented: " + mapCounter);}
+                NextMap();
+                tempPoints = 0;
+            }
         }
         yield();
     }
@@ -184,17 +212,32 @@ void medalNotification(int medal){
 void ResetPoints(){
     //check if current point value is your session PB
     SessionPBUpdate();
-    if(PBPoints > AllTimeBest){
-        AllTimeBest = PBPoints;
-        PBSkips = curSkips;
-        Meta::SaveSettings();
-        UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
-        if(verboseMode){print("New All Time Best: " + AllTimeBest);}
-    }
+    if(ClassicActive){
+        if(PBPoints > AllTimeBest){
+            AllTimeBest = PBPoints;
+            PBPoints = 0;
+            PBSkips = curSkips;
+            Meta::SaveSettings();
+            UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
+            if(verboseMode){print("New Classic Mode Best: " + AllTimeBest);}
+        }
 
-    totalPoints = 0;
-    curSkips = 0;
-    PowerSwitch = false;
+        totalPoints = 0;
+        curSkips = 0;
+        ClassicActive = false;
+    }
+    else if(ProgressiveActive){
+        if(PBPoints > ProgressiveBest){
+            ProgressiveBest = PBPoints;
+            PBPoints = 0;
+            Meta::SaveSettings();
+            UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + ProgressiveBest + ".", successColor,  10000);
+            if(verboseMode){print("New Progressive Mode Best: " + ProgressiveBest);}
+        }
+        totalPoints = 0;
+        curSkips = 0;
+        ProgressiveActive = false;
+    }
     if(verboseMode){print("Points reset to 0");}
 }
 
@@ -224,7 +267,7 @@ bool RespawnTracker(){
             if(verboseMode){print("Respawns: " + CPRespawns + ", calling ResetPoints()");}
             UI::ShowNotification("One-Life Challenge", "You respawned! Your run has ended with " + totalPoints + " points.", warningColor,  10000);
             ResetPoints();
-            //PowerSwitch = false;
+            //ClassicActive = false;
         }
         else {
             return false;
@@ -301,18 +344,30 @@ void Render(){
     auto RaceData = MLFeed::GetRaceData_V4();
 
     if (WindowVisible) {
-        UI::Begin("1LC", UI::WindowFlags::AlwaysAutoResize);
-        UI::Text("Total Points: " + totalPoints);
-        if(PBSkips > 0){
-            UI::Text("Personal Best: " + AllTimeBest + " (" + PBSkips + PBSkipString);
+        UI::Begin("One-Life Challenge", UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoScrollbar | UI::WindowFlags::NoCollapse | UI::WindowFlags::NoResize);
+        if(ClassicActive || ProgressiveActive){
+            UI::Text("Total Points: " + totalPoints);
         }
         else {
-            UI::Text("Personal Best: " + AllTimeBest);
+            UI::Text("Choose a Mode:");
+            if(PBSkips > 0){
+                UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + PBSkipString);
+            }
+            else {
+                UI::Text("Classic PB: " + AllTimeBest);
+            }
+            UI::Text("Progressive PB: " + ProgressiveBest);
         }
 
-        if(!PowerSwitch){
+        if(ProgressiveActive){
+            UI::Text("Skip Tokens: " + SkipTokens);
+        }
+
+        
+        
+        if(!ClassicActive && !ProgressiveActive){
             //challenge stopped
-            if(UI::ButtonColored("Start", enabledHue , enabledSat, enabledVal, scale)){
+            if(UI::ButtonColored("Classic", enabledHue , enabledSat, enabledVal, scale)){
                 try{
                     auto player = cast<MLFeed::PlayerCpInfo_V4>(RaceData.SortedPlayers_Race[0]);
                     MLFeed::SpawnStatus currentSpawnStatus = player.SpawnStatus;
@@ -324,27 +379,61 @@ void Render(){
                     }
                     else{
                         NextMap();
-                        if(verboseMode){print("Challenge started!");}
-                        PowerSwitch = true;
+                        if(verboseMode){print("Classic started!");}
+                        ClassicActive = true;
                         UI::End();
                         return;
                     }
                 }
                 catch{
                     NextMap();
-                    if(verboseMode){print("Challenge started!");}
-                    PowerSwitch = true;
+                    if(verboseMode){print("Classic started!");}
+                    ClassicActive = true;
                     UI::End();
-                    return;                }
+                    return;                
+                }
                 
             }
-            UI::ButtonColored("Stop", disabledHue , disabledSat, disabledVal, scale);
-            //UI::ButtonColored("Free Skip", disabledHue , disabledSat, disabledVal, scale); //disabling useless skip button when challenge is stopped
+
+            if(UI::ButtonColored("Progressive", enabledHue , enabledSat, enabledVal, scale)){
+                try{
+                    auto player = cast<MLFeed::PlayerCpInfo_V4>(RaceData.SortedPlayers_Race[0]);
+                    MLFeed::SpawnStatus currentSpawnStatus = player.SpawnStatus;
+                    if(currentSpawnStatus == MLFeed::SpawnStatus::Spawning){
+                        UI::ShowNotification("One-Life Challenge", "You cannot start the challenge while spawning! Try again.", warningColor,  5000);
+                        if(verboseMode){print("Attempted to start while spawning!");}
+                        UI::End();
+                        return;
+                    }
+                    else{
+                        NextMap();
+                        if(verboseMode){print("Progressive started!");}
+                        ProgressiveActive = true;
+                        UI::End();
+                        return;
+                    }
+                }
+                catch{
+                    NextMap();
+                    if(verboseMode){print("Progressive started!");}
+                    ProgressiveActive = true;
+                    UI::End();
+                    return;                
+                }
+                
+            }
             
         }
-        else {
-            //challenge started
-            UI::ButtonColored("Start", disabledHue , disabledSat, disabledVal, scale);
+        else if(ClassicActive) {
+            //Classic started
+            //UI::ButtonColored("Start", disabledHue , disabledSat, disabledVal, scale);
+            if(PBSkips > 0){
+                UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + PBSkipString);
+            }
+            else {
+                UI::Text("Classic PB: " + AllTimeBest);
+            }
+
             if(UI::ButtonColored("Stop", enabledHue , enabledSat, enabledVal, scale)){
                 ResetPoints();
                 UI::End();
@@ -375,6 +464,40 @@ void Render(){
 
             
         }
+        else{
+            //Progressive started
+            UI::Text("Progressive PB: " + ProgressiveBest);
+
+            if(UI::ButtonColored("Stop", enabledHue , enabledSat, enabledVal, scale)){
+                //replace with progressive reset
+                ResetPoints();
+                UI::End();
+                return;
+            }
+            //add skip token logic
+            if(SkipCheck()){
+                if (UI::ButtonColored("Free Skip", enabledHue , enabledSat, enabledVal, scale)){
+                    if(verboseMode){print("Attempted to free skip, map time: " + curAuthor);}
+                    NextMap();
+                }
+            }
+            else {
+                UI::ButtonColored("Free Skip", disabledHue , disabledSat, disabledVal, scale);
+            }
+
+            if(totalPoints > 5) {
+                if (UI::ButtonColored("5-Point Skip", enabledHue , enabledSat, enabledVal, scale)){
+                    if(verboseMode){print("Attempted to 5-point skip, map time: " + curAuthor);}
+                    SessionPBUpdate();
+                    curSkips += 1;
+                    totalPoints -= 5;
+                    NextMap();
+                }
+            }
+            else {
+                UI::ButtonColored("5-Point Skip", disabledHue , disabledSat, disabledVal, scale);
+            }
+        }
 
         
         UI::End();
@@ -390,7 +513,7 @@ void RenderMenu()
         UI::Text("Warning: Club Required");
         UI::TextWrapped("Sorry, this plugin won't work because you don't have club access :(");
         UI::EndMenu();
-}
+        }
     }
 
     if(mapAccess){if(UI::BeginMenu(Icons::Heart + " 1LC - One-Life Challenge")){
@@ -410,11 +533,18 @@ void RenderMenu()
                 ResetPoints();
             }
 
-            if (UI::MenuItem("1LC - Reset PB (PERMANENT!)")){
+            if (UI::MenuItem("1LC - Reset Classic Mode PB (PERMANENT!)")){
                 if(verboseMode){print("Personal Best was " + AllTimeBest + ", reset to 0");}
                 UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
                 AllTimeBest = 0;
                 PBSkips = 0;
+                Meta::SaveSettings();
+            }
+
+            if (UI::MenuItem("1LC - Reset Progressive Mode PB (PERMANENT!)")){
+                if(verboseMode){print("Personal Best was " + ProgressiveBest + ", reset to 0");}
+                UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + ProgressiveBest + ". It has now been reset to 0.", warningColor,  5000);
+                ProgressiveBest = 0;
                 Meta::SaveSettings();
             }
 
