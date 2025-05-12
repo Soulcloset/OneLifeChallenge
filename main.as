@@ -1,9 +1,6 @@
 /*
     One-Life Challenge
     by Soulcloset
-
-    TODO:
-    - complete progressive mode gameplay (up to 50 points?)
 */
 
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
@@ -55,7 +52,9 @@ int SkipTokens = 0; //Progressive Mode number of free skips available
 int mapCounter = 0; //counts how many maps have been played this run
 int skipReason = 0; //0 = longer than threshold, 1 = skip token should be used
 int progMessageCounter = 0;
+int curLevel = 0; //level counter for progressive mode
 string progStatus = "Complete your first map!";
+int[] reqArray = {0, 10, 16, 23, 31, 40, 50, 61, 73, 86, 100};
 
 //ui variables
 vec2 scale = vec2(100, 40);
@@ -182,7 +181,13 @@ int GetMedalEarned(){
                         if(verboseMode){print("Skip token added! Total: " + SkipTokens);}
                     }
                 }
-                else if(time <= goldTime) {medal = 4;}
+                else if(time <= goldTime) {
+                    medal = 4;
+                    if(ProgressiveActive){
+                        SkipTokens++;
+                        if(verboseMode){print("Skip token added! Total: " + SkipTokens);}
+                    }
+                }
                 else if(time <= silverTime) {medal = 3;}
                 else if(time <= bronzeTime) {medal = 2;}
                 else medal = 1;
@@ -208,12 +213,11 @@ void medalNotification(int medal){
         UI::ShowNotification("One-Life Challenge", "You earned a Silver Medal!", successColor,  5000);
     }
     else if (medal == 4){
+        if(ProgressiveActive){UI::ShowNotification("One-Life Challenge", "You earned a Gold Medal and 1 Skip Token!", successColor,  5000); return;}
         UI::ShowNotification("One-Life Challenge", "You earned a Gold Medal!", successColor,  5000);
     }
-    else if (medal == 5 && ProgressiveActive){
-        UI::ShowNotification("One-Life Challenge", "You earned an Author Medal and 1 Skip Token!", successColor,  5000);
-    }
     else if (medal == 5){
+        if(ProgressiveActive){UI::ShowNotification("One-Life Challenge", "You earned an Author Medal and 1 Skip Token!", successColor,  5000); return;}
         UI::ShowNotification("One-Life Challenge", "You earned an Author Medal!", successColor,  5000);
     }
     else{
@@ -252,6 +256,7 @@ void ResetPoints(){
         SkipTokens = 0;
         progMessageCounter = 0;
         mapCounter = 0;
+        curLevel = 0;
         progStatus = "Complete your first map!";
         ProgressiveActive = false;
     }
@@ -361,30 +366,43 @@ bool SkipCheck(){
 }
 
 void updateProgressiveStatus(){
-    //basic b*tch if-then coding a gamemode
     if(mapCounter > 0 && mapCounter < 3){
         if(mapCounter == 1){
             progMessageCounter = 2;
         }
         progStatus = "Complete " + progMessageCounter + " more map(s) to reveal your next challenge!";
+        return;
     }
     else if(mapCounter == 3){
-        progMessageCounter = 3;
-        progStatus = "Reach 8 points in " + progMessageCounter + " maps or less!";
+        curLevel = 1;
+        return;
     }
-    else if(mapCounter > 3 && mapCounter < 8){
-        if(totalPoints < 8){
-            progStatus = "Reach 8 points in " + progMessageCounter + " maps or less!";
-        }
+
+    if(verboseMode){print("curLevel: " + curLevel + ", reqArray.length: " + reqArray.Length);}
+    if (curLevel >= reqArray.Length) {
+        progStatus = "Congratulations! You've completed all challenges. Keep playing for a high score!";
+        return;
+    }
+
+    int requiredPoints = reqArray[curLevel];
+    int startMap = curLevel * 3 + 1;
+    int endMap = startMap + 2;
+
+    if (mapCounter >= startMap && mapCounter <= endMap) {
+        if (totalPoints < requiredPoints) {
+            progStatus = "Reach " + requiredPoints + " points in the next " + (endMap - mapCounter + 1) + " maps!";
+        } 
         else {
             progStatus = "Challenge completed! Keep playing to reveal your next challenge!";
-            mapCounter = 7; //setting mapCounter such that completing 1 more map will progress the game
+            mapCounter = endMap; // Progress the game after completing the challenge
+            curLevel++;
         }
+        return;
     }
-    else if(mapCounter == 8){
-        progStatus = "haven't gotten here yet lol";
+    else if(mapCounter > endMap && totalPoints < requiredPoints){
+        UI::ShowNotification("One-Life Challenge", "Level " + curLevel + " got the best of you! You finished with " + totalPoints + " points.", warningColor,  5000);
+        ResetPoints();
     }
-    
 }
 
 void Render(){
@@ -406,7 +424,7 @@ void Render(){
             else {
                 UI::Text("Classic PB: " + AllTimeBest);
             }
-            UI::Text("Progressive PB: " + ProgressiveBest);
+            UI::Text("Challenge PB: " + ProgressiveBest);
         }
 
         if(ProgressiveActive){
@@ -445,7 +463,7 @@ void Render(){
                 
             }
 
-            if(UI::ButtonColored("Progressive", enabledHue , enabledSat, enabledVal, scale)){
+            if(UI::ButtonColored("Challenge", enabledHue , enabledSat, enabledVal, scale)){
                 try{
                     auto player = cast<MLFeed::PlayerCpInfo_V4>(RaceData.SortedPlayers_Race[0]);
                     MLFeed::SpawnStatus currentSpawnStatus = player.SpawnStatus;
@@ -517,6 +535,7 @@ void Render(){
         else{
             //Progressive started
             UI::Text("Progressive PB: " + ProgressiveBest);
+            UI::Text("Level " + curLevel);
             UI::PushTextWrapPos(150.0);
             UI::Text(progStatus);
             UI::PopTextWrapPos();
@@ -604,6 +623,12 @@ void RenderMenu()
                 UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + ProgressiveBest + ". It has now been reset to 0.", warningColor,  5000);
                 ProgressiveBest = 0;
                 Meta::SaveSettings();
+            }
+
+            if (UI::MenuItem("1LC - Clear Next Progressive Mode Level DEBUG")){
+                if(verboseMode){print("Cleared level using debug feature. totalPoints before = " + totalPoints);}
+                totalPoints = reqArray[curLevel];
+                if(verboseMode){print("totalPoints after = " + totalPoints);}
             }
 
             if (UI::MenuItem("1LC - Add Skip Token DEBUG")) {
