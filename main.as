@@ -3,9 +3,7 @@
     by Soulcloset
 
     TODO:
-    - Create gamemode selection (multiple start buttons?)
-    - Designate current function as one mode (needs a name)
-    - Create new gamemode with progressive point requirements for x maps completed
+    - complete progressive mode gameplay (up to 50 points?)
 */
 
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
@@ -56,6 +54,8 @@ bool resetProtection = false;
 int SkipTokens = 0; //Progressive Mode number of free skips available
 int mapCounter = 0; //counts how many maps have been played this run
 int skipReason = 0; //0 = longer than threshold, 1 = skip token should be used
+int progMessageCounter = 0;
+string progStatus = "Complete your first map!";
 
 //ui variables
 vec2 scale = vec2(100, 40);
@@ -102,9 +102,12 @@ void Main()
             if(tempPoints > 0 && !RespawnTracker()){
                 totalPoints += tempPoints;
                 medalNotification(tempPoints);
+                progMessageCounter--;
                 if(verboseMode){print("Total points: " + totalPoints);}
                 mapCounter++;
                 if(verboseMode){print("Map count incremented: " + mapCounter);}
+                updateProgressiveStatus();
+                if(verboseMode){print("progStatus: " + progStatus);}
                 NextMap();
                 tempPoints = 0;
             }
@@ -247,6 +250,9 @@ void ResetPoints(){
         totalPoints = 0;
         curSkips = 0;
         SkipTokens = 0;
+        progMessageCounter = 0;
+        mapCounter = 0;
+        progStatus = "Complete your first map!";
         ProgressiveActive = false;
     }
     if(verboseMode){print("Points reset to 0");}
@@ -352,6 +358,33 @@ bool SkipCheck(){
         //if(verboseMode){print("SkipCheck Scenario 3");}
         return false; //no map loaded, cannot be skipped
     }
+}
+
+void updateProgressiveStatus(){
+    //basic b*tch if-then coding a gamemode
+    if(mapCounter > 0 && mapCounter < 3){
+        if(mapCounter == 1){
+            progMessageCounter = 2;
+        }
+        progStatus = "Complete " + progMessageCounter + " more map(s) to reveal your next challenge!";
+    }
+    else if(mapCounter == 3){
+        progMessageCounter = 3;
+        progStatus = "Reach 8 points in " + progMessageCounter + " maps or less!";
+    }
+    else if(mapCounter > 3 && mapCounter < 8){
+        if(totalPoints < 8){
+            progStatus = "Reach 8 points in " + progMessageCounter + " maps or less!";
+        }
+        else {
+            progStatus = "Challenge completed! Keep playing to reveal your next challenge!";
+            mapCounter = 7; //setting mapCounter such that completing 1 more map will progress the game
+        }
+    }
+    else if(mapCounter == 8){
+        progStatus = "haven't gotten here yet lol";
+    }
+    
 }
 
 void Render(){
@@ -484,6 +517,9 @@ void Render(){
         else{
             //Progressive started
             UI::Text("Progressive PB: " + ProgressiveBest);
+            UI::PushTextWrapPos(150.0);
+            UI::Text(progStatus);
+            UI::PopTextWrapPos();
 
             if(UI::ButtonColored("Stop", enabledHue , enabledSat, enabledVal, scale)){
                 //replace with progressive reset
