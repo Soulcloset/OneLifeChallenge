@@ -55,6 +55,7 @@ bool resetProtection = false;
 //progressive mode variables
 int SkipTokens = 0; //Progressive Mode number of free skips available
 int mapCounter = 0; //counts how many maps have been played this run
+int skipReason = 0; //0 = longer than threshold, 1 = skip token should be used
 
 //ui variables
 vec2 scale = vec2(100, 40);
@@ -171,7 +172,13 @@ int GetMedalEarned(){
                 return 0;
     } else if (time != -1) {
                 // run finished, points: nomedal = 1, bronze = 2, silver = 3, gold = 4, author = 5
-                if(time <= authorTime) {medal = 5;}
+                if(time <= authorTime) {
+                    medal = 5;
+                    if(ProgressiveActive){
+                        SkipTokens++;
+                        if(verboseMode){print("Skip token added! Total: " + SkipTokens);}
+                    }
+                }
                 else if(time <= goldTime) {medal = 4;}
                 else if(time <= silverTime) {medal = 3;}
                 else if(time <= bronzeTime) {medal = 2;}
@@ -199,6 +206,9 @@ void medalNotification(int medal){
     }
     else if (medal == 4){
         UI::ShowNotification("One-Life Challenge", "You earned a Gold Medal!", successColor,  5000);
+    }
+    else if (medal == 5 && ProgressiveActive){
+        UI::ShowNotification("One-Life Challenge", "You earned an Author Medal and 1 Skip Token!", successColor,  5000);
     }
     else if (medal == 5){
         UI::ShowNotification("One-Life Challenge", "You earned an Author Medal!", successColor,  5000);
@@ -236,6 +246,7 @@ void ResetPoints(){
         }
         totalPoints = 0;
         curSkips = 0;
+        SkipTokens = 0;
         ProgressiveActive = false;
     }
     if(verboseMode){print("Points reset to 0");}
@@ -323,8 +334,14 @@ bool SkipCheck(){
     auto map = app.RootMap;
     if(map !is null){
         if(map.TMObjective_AuthorTime > skipThreshold){
-            //if(verboseMode){print("SkipCheck Scenario 1");}
+            //if(verboseMode){print("SkipCheck: Skippable due to threshold");}
+            skipReason = 0;
             return true; //map is longer than threshold, can be skipped
+        }
+        else if(SkipTokens > 0){
+            //if(verboseMode){print("SkipCheck: Skippable due to Skip Tokens");}
+            skipReason = 1;
+            return true; //map is skippable due to skip tokens present
         }
         else {
             //if(verboseMode){print("SkipCheck Scenario 2");}
@@ -477,7 +494,12 @@ void Render(){
             //add skip token logic
             if(SkipCheck()){
                 if (UI::ButtonColored("Free Skip", enabledHue , enabledSat, enabledVal, scale)){
-                    if(verboseMode){print("Attempted to free skip, map time: " + curAuthor);}
+                    if(verboseMode){print("Attempted to free skip, map time: " + curAuthor + " , Skip Tokens: " + SkipTokens);}
+                    if(skipReason == 1){
+                        SkipTokens--;
+                        if(verboseMode){print("Skip token used! Total: " + SkipTokens);}
+                        UI::ShowNotification("One-Life Challenge", "You used a Skip Token!", warningColor,  5000);
+                    }
                     NextMap();
                 }
             }
@@ -546,6 +568,10 @@ void RenderMenu()
                 UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + ProgressiveBest + ". It has now been reset to 0.", warningColor,  5000);
                 ProgressiveBest = 0;
                 Meta::SaveSettings();
+            }
+
+            if (UI::MenuItem("1LC - Add Skip Token DEBUG")) {
+                SkipTokens++;
             }
 
             if (UI::MenuItem("1LC - Next Random Map DEBUG")) {
