@@ -352,8 +352,7 @@ void Render(){
             }
             if(SkipCheck()){
                 if (UI::ButtonColored("Free Skip", enabledHue , enabledSat, enabledVal, scale)){
-                    if(verboseMode){print("Attempted to skip, map time: " + curAuthor);}
-                    curSkips += 1;
+                    if(verboseMode){print("Attempted to free skip, map time: " + curAuthor);}
                     NextMap();
                 }
             }
