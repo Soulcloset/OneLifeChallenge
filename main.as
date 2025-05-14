@@ -241,7 +241,6 @@ void ResetPoints(){
 
         totalPoints = 0;
         curSkips = 0;
-        ClassicActive = false;
     }
     else if(ProgressiveActive){
         if(PBPoints > ProgressiveBest){
@@ -251,15 +250,10 @@ void ResetPoints(){
             UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + ProgressiveBest + ".", successColor,  10000);
             if(verboseMode){print("New Progressive Mode Best: " + ProgressiveBest);}
         }
-        totalPoints = 0;
-        curSkips = 0;
-        SkipTokens = 0;
-        progMessageCounter = 0;
-        mapCounter = 0;
-        curLevel = 0;
-        progStatus = "Complete your first map!";
-        ProgressiveActive = false;
+        ProgressiveInit();
     }
+    ClassicActive = false;
+    ProgressiveActive = false;
     if(verboseMode){print("Points reset to 0");}
 }
 
@@ -268,6 +262,16 @@ void SessionPBUpdate(){
         PBPoints = totalPoints;
         if(verboseMode){print("New Session PB saved: " + PBPoints);}
     }
+}
+
+void ProgressiveInit(){
+    totalPoints = 0;
+    curSkips = 0;
+    SkipTokens = 0;
+    progMessageCounter = 0;
+    mapCounter = 0;
+    curLevel = 0;
+    progStatus = "Complete your first map!";
 }
 
 bool RespawnTracker(){
@@ -366,9 +370,9 @@ bool SkipCheck(){
 }
 
 void updateProgressiveStatus(){
-    if(mapCounter > 0 && mapCounter < 3){
-        if(mapCounter == 1){
-            progMessageCounter = 2;
+    if(mapCounter < 3){
+        if(mapCounter == 0){
+            progMessageCounter = 3;
         }
         progStatus = "Complete " + progMessageCounter + " more map(s) to reveal your next challenge!";
         return;
@@ -402,6 +406,7 @@ void updateProgressiveStatus(){
     else if(mapCounter > endMap){
         UI::ShowNotification("One-Life Challenge", "Level " + curLevel + " got the best of you! You finished with " + totalPoints + " points.", warningColor,  5000);
         ResetPoints();
+        ProgressiveInit();
     }
 }
 
@@ -476,6 +481,7 @@ void Render(){
                     else{
                         NextMap();
                         if(verboseMode){print("Progressive started!");}
+                        ProgressiveInit();
                         ProgressiveActive = true;
                         UI::End();
                         return;
@@ -541,7 +547,6 @@ void Render(){
             UI::PopTextWrapPos();
 
             if(UI::ButtonColored("Stop", enabledHue , enabledSat, enabledVal, scale)){
-                //replace with progressive reset
                 ResetPoints();
                 UI::End();
                 return;
