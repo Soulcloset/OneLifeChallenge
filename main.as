@@ -103,11 +103,11 @@ void Main()
                 medalNotification(tempPoints);
                 progMessageCounter--;
                 if(verboseMode){print("Total points: " + totalPoints);}
-                mapCounter++;
-                if(verboseMode){print("Map count incremented: " + mapCounter);}
                 updateProgressiveStatus();
                 if(verboseMode){print("progStatus: " + progStatus);}
                 NextMap();
+                mapCounter++;
+                if(verboseMode){print("Map count incremented: " + mapCounter);}
                 tempPoints = 0;
             }
         }
@@ -399,7 +399,7 @@ void updateProgressiveStatus(){
         }
         return;
     }
-    else if(mapCounter > endMap && totalPoints < requiredPoints){
+    else if(mapCounter > endMap){
         UI::ShowNotification("One-Life Challenge", "Level " + curLevel + " got the best of you! You finished with " + totalPoints + " points.", warningColor,  5000);
         ResetPoints();
     }
