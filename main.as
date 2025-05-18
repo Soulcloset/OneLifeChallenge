@@ -430,7 +430,7 @@ void Render(){
         else {
             UI::Text("Choose a Mode:");
             if(PBSkips > 0){
-                UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + PBSkipString);
+                UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + " " + PBSkipString);
             }
             else {
                 UI::Text("Classic PB: " + AllTimeBest);
@@ -509,14 +509,14 @@ void Render(){
             //UI::ButtonColored("Start", disabledHue , disabledSat, disabledVal, scale);
             if(PBPoints > AllTimeBest){
                 if (curSkips > 0){
-                    UI::Text("Classic PB: " + PBPoints + " (" + curSkips + PBSkipString);
+                    UI::Text("Classic PB: " + PBPoints + " (" + curSkips + " " + PBSkipString);
                 }
                 else{
                     UI::Text("Classic PB: " + PBPoints);
                 }
             }
             else if(PBSkips > 0){
-                UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + PBSkipString);
+                UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + " " + PBSkipString);
             }
             else {
                 UI::Text("Classic PB: " + AllTimeBest);
