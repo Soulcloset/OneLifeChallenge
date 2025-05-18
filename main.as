@@ -1,6 +1,11 @@
 /*
     One-Life Challenge
     by Soulcloset
+
+    TODO:
+    - Move skip settings to Developers tab & make skipThreshold conditional on AnySkip being false
+        - learn how to display text in settings menu?
+    - 1 free skip in Classic Mode using un-earnable skip token
 */
 
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
@@ -122,6 +127,7 @@ void NextMap(){
     if(!mapAccess){return;}
     else{
         MXRandom::LoadRandomMap();
+        SessionPBUpdate();
     }
 }
 
@@ -238,9 +244,7 @@ void ResetPoints(){
             UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
             if(verboseMode){print("New Classic Mode Best: " + AllTimeBest);}
         }
-
-        totalPoints = 0;
-        curSkips = 0;
+        ClassicInit();
     }
     else if(ProgressiveActive){
         if(PBPoints > ProgressiveBest){
@@ -272,6 +276,15 @@ void ProgressiveInit(){
     mapCounter = 0;
     curLevel = 0;
     progStatus = "Complete your first map!";
+    PBPoints = 0;
+}
+
+void ClassicInit(){
+    totalPoints = 0;
+    curSkips = 0;
+    SkipTokens = 1;
+    mapCounter = 0;
+    PBPoints = 0;
 }
 
 bool RespawnTracker(){
@@ -409,7 +422,6 @@ void updateProgressiveStatus(){
             //you died
             UI::ShowNotification("One-Life Challenge", "Level " + curLevel + " got the best of you! You finished with " + totalPoints + " points.", warningColor,  5000);
             ResetPoints();
-            ProgressiveInit();
         }
         curLevel++;
         updateProgressiveStatus();
@@ -437,7 +449,11 @@ void Render(){
             }
             UI::Text("Challenge PB: " + ProgressiveBest);
         }
-
+        if(ClassicActive){
+            if(SkipTokens > 0){
+                UI::Text("1 Free Skip Available");
+            }
+        }
         if(ProgressiveActive){
             UI::Text("Skip Tokens: " + SkipTokens);
         }
@@ -459,6 +475,7 @@ void Render(){
                     else{
                         NextMap();
                         if(verboseMode){print("Classic started!");}
+                        ClassicInit();
                         ClassicActive = true;
                         UI::End();
                         return;
@@ -529,7 +546,12 @@ void Render(){
             }
             if(SkipCheck()){
                 if (UI::ButtonColored("Free Skip", enabledHue , enabledSat, enabledVal, scale)){
-                    if(verboseMode){print("Attempted to free skip, map time: " + curAuthor);}
+                    if(verboseMode){print("Attempted to free skip, map time: " + curAuthor + " , Skip Tokens: " + SkipTokens);}
+                    if(skipReason == 1){
+                        SkipTokens--;
+                        if(verboseMode){print("Skip token used! Total: " + SkipTokens);}
+                        UI::ShowNotification("One-Life Challenge", "Map skipped!", warningColor,  5000);
+                    }
                     NextMap();
                 }
             }
@@ -540,7 +562,7 @@ void Render(){
             if(totalPoints > 5) {
                 if (UI::ButtonColored("5-Point Skip", enabledHue , enabledSat, enabledVal, scale)){
                     if(verboseMode){print("Attempted to 5-point skip, map time: " + curAuthor);}
-                    SessionPBUpdate();
+                    //SessionPBUpdate();
                     curSkips += 1;
                     totalPoints -= 5;
                     NextMap();
@@ -578,7 +600,7 @@ void Render(){
                     if(skipReason == 1){
                         SkipTokens--;
                         if(verboseMode){print("Skip token used! Total: " + SkipTokens);}
-                        UI::ShowNotification("One-Life Challenge", "You used a Skip Token!", warningColor,  5000);
+                        UI::ShowNotification("One-Life Challenge", "Map skipped!", warningColor,  5000);
                     }
                     NextMap();
                 }
@@ -590,7 +612,7 @@ void Render(){
             if(totalPoints > 5) {
                 if (UI::ButtonColored("5-Point Skip", enabledHue , enabledSat, enabledVal, scale)){
                     if(verboseMode){print("Attempted to 5-point skip, map time: " + curAuthor);}
-                    SessionPBUpdate();
+                    //SessionPBUpdate();
                     curSkips += 1;
                     totalPoints -= 5;
                     NextMap();
@@ -640,6 +662,7 @@ void RenderMenu()
                 UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
                 AllTimeBest = 0;
                 PBSkips = 0;
+                PBPoints = 0;
                 Meta::SaveSettings();
             }
 
@@ -647,6 +670,7 @@ void RenderMenu()
                 if(verboseMode){print("Personal Best was " + ProgressiveBest + ", reset to 0");}
                 UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + ProgressiveBest + ". It has now been reset to 0.", warningColor,  5000);
                 ProgressiveBest = 0;
+                PBPoints = 0;
                 Meta::SaveSettings();
             }
 
@@ -654,10 +678,6 @@ void RenderMenu()
                 if(verboseMode){print("Cleared level using debug feature. totalPoints before = " + totalPoints);}
                 totalPoints = reqArray[curLevel];
                 if(verboseMode){print("totalPoints after = " + totalPoints);}
-            }
-
-            if (UI::MenuItem("1LC - Add Skip Token DEBUG")) {
-                SkipTokens++;
             }
 
             if (UI::MenuItem("1LC - Add Skip Token DEBUG")) {
