@@ -41,7 +41,7 @@ int PBPoints = 0; //session PB
 int curAuthor = -1;
 int curSkips = 0;
 string medalMessage = "";
-string PBSkipString = " skips)";
+string PBSkipString = " skip(s))";
 
 string curMap = "";
 bool spawnLatch = false;
@@ -507,7 +507,15 @@ void Render(){
         else if(ClassicActive) {
             //Classic started
             //UI::ButtonColored("Start", disabledHue , disabledSat, disabledVal, scale);
-            if(PBSkips > 0){
+            if(PBPoints > AllTimeBest){
+                if (curSkips > 0){
+                    UI::Text("Classic PB: " + PBPoints + " (" + curSkips + PBSkipString);
+                }
+                else{
+                    UI::Text("Classic PB: " + PBPoints);
+                }
+            }
+            else if(PBSkips > 0){
                 UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + PBSkipString);
             }
             else {
@@ -546,7 +554,13 @@ void Render(){
         }
         else{
             //Progressive started
-            UI::Text("Progressive PB: " + ProgressiveBest);
+            if(PBPoints > ProgressiveBest){
+                UI::Text("Challenge PB: " + PBPoints);
+            }
+            else {
+                UI::Text("Challenge PB: " + ProgressiveBest);
+            }
+            
             UI::Text("Level " + curLevel);
             UI::PushTextWrapPos(150.0);
             UI::Text(progStatus);
