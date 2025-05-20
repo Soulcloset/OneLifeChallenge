@@ -5,7 +5,6 @@
     TODO:
     - Move skip settings to Developers tab & make skipThreshold conditional on AnySkip being false
         - learn how to display text in settings menu?
-    - Programmatically generate the reqArray (score targets) based on the number of levels
 */
 
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
@@ -60,7 +59,6 @@ int skipReason = 0; //0 = longer than threshold, 1 = skip token should be used
 int progMessageCounter = 0;
 int curLevel = 0; //level counter for progressive mode
 string progStatus = "Complete your first map!";
-int[] reqArray = {0, 10, 16, 23, 31, 40, 50, 61, 73, 86, 100};
 
 //ui variables
 vec2 scale = vec2(100, 40);
@@ -410,6 +408,7 @@ void updateProgressiveStatus(){
         return;
     }
 
+    /*
     if(verboseMode){print("curLevel: " + curLevel + ", reqArray.length: " + reqArray.Length);}
     if (curLevel >= reqArray.Length) {
         progStatus = "Congratulations! You've completed all challenges. Keep playing for a high score!";
@@ -417,11 +416,13 @@ void updateProgressiveStatus(){
     }
 
     int requiredPoints = reqArray[curLevel];
-    int startMap = curLevel * 3 + 1; //lev 1 = 4
-    int endMap = startMap + 2; //lev 1 = 6
+    */
+    int requiredPoints = GetPointReq(curLevel);
+    int startMap = curLevel * 3 + 1;
+    int endMap = startMap + 2;
 
     if (mapCounter >= startMap && mapCounter <= endMap) {
-        if (totalPoints < requiredPoints) { //lev 1 = 10
+        if (totalPoints < requiredPoints) {
             progStatus = "Reach " + requiredPoints + " points in the next " + (endMap - mapCounter + 1) + " maps!";
         } 
         else {
@@ -440,6 +441,20 @@ void updateProgressiveStatus(){
         curLevel++;
         updateProgressiveStatus();
     }
+}
+
+int GetPointReq(int level) {
+    if (level <= 0) return 0;
+    if (level == 1) return 10;
+    int val = 10;
+    int diff = 6;
+    for (int i = 2; i <= level; i++) {
+        val += diff;
+        if(i < 10){
+            diff += 1;
+        }
+    }
+    return val;
 }
 
 void Render(){
@@ -693,13 +708,13 @@ void RenderMenu()
         if(debugMode){
             if (UI::MenuItem("1LC - Clear Next Progressive Mode Level DEBUG")){
                 if(verboseMode){print("Cleared level using debug feature. totalPoints before = " + totalPoints);}
-                totalPoints = reqArray[curLevel];
+                totalPoints = GetPointReq(curLevel);
                 if(verboseMode){print("totalPoints after = " + totalPoints);}
                 SettingsModified = true;
             }
 
-            if (UI::MenuItem("1LC - Add Skip Token DEBUG")) {
-                SkipTokens++;
+            if (UI::MenuItem("1LC - Add 100 Skip Tokens DEBUG")) {
+                SkipTokens += 100;
                 SettingsModified = true;
             }
 
