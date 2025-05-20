@@ -5,7 +5,7 @@
     TODO:
     - Move skip settings to Developers tab & make skipThreshold conditional on AnySkip being false
         - learn how to display text in settings menu?
-    - 1 free skip in Classic Mode using un-earnable skip token
+    - Programmatically generate the reqArray (score targets) based on the number of levels
 */
 
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
@@ -47,6 +47,7 @@ int curAuthor = -1;
 int curSkips = 0;
 string medalMessage = "";
 string PBSkipString = " skips)";
+bool SettingsModified = false; //used to check if the settings have been modified from defaults in the current run
 
 string curMap = "";
 bool spawnLatch = false;
@@ -258,6 +259,7 @@ void ResetPoints(){
     }
     ClassicActive = false;
     ProgressiveActive = false;
+    SettingsModified = false;
     if(verboseMode){print("Points reset to 0");}
 }
 
@@ -382,6 +384,18 @@ bool SkipCheck(){
     }
 }
 
+bool SettingsCheck(){
+    //checks if settings have been modified from defaults
+    //false = not modified, true = modified
+    if(AnySkip != false || skipThreshold != 180000){
+        SettingsModified = true;
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
 void updateProgressiveStatus(){
     if(mapCounter < 3){
         if(mapCounter == 1){
@@ -436,6 +450,11 @@ void Render(){
 
     if (WindowVisible) {
         UI::Begin("One-Life Challenge", UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoScrollbar | UI::WindowFlags::NoCollapse | UI::WindowFlags::NoResize);
+        
+        if(SettingsModified){
+            UI::Text(Icons::Times + "Settings Modified");
+        }
+
         if(ClassicActive || ProgressiveActive){
             UI::Text("Total Points: " + totalPoints);
         }
@@ -524,6 +543,7 @@ void Render(){
         else if(ClassicActive) {
             //Classic started
             //UI::ButtonColored("Start", disabledHue , disabledSat, disabledVal, scale);
+            SettingsCheck();
             if(PBPoints > AllTimeBest){
                 if (curSkips > 0){
                     UI::Text("Classic PB: " + PBPoints + " (" + curSkips + PBSkipString);
@@ -576,6 +596,7 @@ void Render(){
         }
         else{
             //Progressive started
+            SettingsCheck();
             if(PBPoints > ProgressiveBest){
                 UI::Text("Challenge PB: " + PBPoints);
             }
@@ -652,40 +673,34 @@ void RenderMenu()
                 WindowVisible = !WindowVisible;
             }
         }
+        if (UI::MenuItem("1LC - Reset Classic Mode PB (PERMANENT!)")){
+            if(verboseMode){print("Personal Best was " + AllTimeBest + ", reset to 0");}
+            UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
+            AllTimeBest = 0;
+            PBSkips = 0;
+            PBPoints = 0;
+            Meta::SaveSettings();
+        }
+
+        if (UI::MenuItem("1LC - Reset Progressive Mode PB (PERMANENT!)")){
+            if(verboseMode){print("Personal Best was " + ProgressiveBest + ", reset to 0");}
+            UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + ProgressiveBest + ". It has now been reset to 0.", warningColor,  5000);
+            ProgressiveBest = 0;
+            PBPoints = 0;
+            Meta::SaveSettings();
+        }
+
         if(debugMode){
-            if (UI::MenuItem("1LC - Reset Run DEBUG")) {
-                ResetPoints();
-            }
-
-            if (UI::MenuItem("1LC - Reset Classic Mode PB (PERMANENT!)")){
-                if(verboseMode){print("Personal Best was " + AllTimeBest + ", reset to 0");}
-                UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
-                AllTimeBest = 0;
-                PBSkips = 0;
-                PBPoints = 0;
-                Meta::SaveSettings();
-            }
-
-            if (UI::MenuItem("1LC - Reset Progressive Mode PB (PERMANENT!)")){
-                if(verboseMode){print("Personal Best was " + ProgressiveBest + ", reset to 0");}
-                UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + ProgressiveBest + ". It has now been reset to 0.", warningColor,  5000);
-                ProgressiveBest = 0;
-                PBPoints = 0;
-                Meta::SaveSettings();
-            }
-
             if (UI::MenuItem("1LC - Clear Next Progressive Mode Level DEBUG")){
                 if(verboseMode){print("Cleared level using debug feature. totalPoints before = " + totalPoints);}
                 totalPoints = reqArray[curLevel];
                 if(verboseMode){print("totalPoints after = " + totalPoints);}
+                SettingsModified = true;
             }
 
             if (UI::MenuItem("1LC - Add Skip Token DEBUG")) {
                 SkipTokens++;
-            }
-
-            if (UI::MenuItem("1LC - Next Random Map DEBUG")) {
-                NextMap();
+                SettingsModified = true;
             }
 
             if (UI::MenuItem("1LC - Check Map Access DEBUG")) {
