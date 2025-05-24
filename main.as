@@ -453,6 +453,15 @@ int GetPointReq(int level) {
     if (level == 1) return 10;
     int val = 10;
     int diff = 6;
+    if (level >= 21){
+        val = 230 + ((level - 20) * 14);
+        return val;
+        
+    }
+    else if (level >= 11){
+        val = 100 + ((level - 10) * 13);
+        return val;
+    }
     for (int i = 2; i <= level; i++) {
         val += diff;
         if(i < 10){
@@ -478,6 +487,12 @@ void Render(){
         
         if(SettingsModified){
             UI::Text(Icons::Times + "Settings Modified");
+        }
+        if(curLevel > 20){
+            UI::Text(Icons::ThermometerFull + "Endless Mode");
+        }
+        else if(curLevel > 10){
+            UI::Text(Icons::LongArrowUp + "Endless Mode");
         }
 
         if(ClassicActive || ProgressiveActive){
