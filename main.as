@@ -70,6 +70,7 @@ float disabledVal = 0.31;
 float enabledHue = 336.0;
 float enabledSat = 0.95;
 float enabledVal = 0.80;
+int classicPBSource = AllTimeBest;
 
 void Main()
 {
@@ -238,7 +239,7 @@ void ResetPoints(){
         if(PBPoints > AllTimeBest){
             AllTimeBest = PBPoints;
             PBPoints = 0;
-            PBSkips = curSkips;
+            //PBSkips = curSkips;
             Meta::SaveSettings();
             UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
             if(verboseMode){print("New Classic Mode Best: " + AllTimeBest);}
@@ -264,6 +265,9 @@ void ResetPoints(){
 void SessionPBUpdate(){
     if (totalPoints > PBPoints){
         PBPoints = totalPoints;
+        if (ClassicActive){
+            PBSkips = curSkips;
+        }
         if(verboseMode){print("New Session PB saved: " + PBPoints);}
     }
 }
@@ -285,6 +289,7 @@ void ClassicInit(){
     SkipTokens = 1;
     mapCounter = 0;
     PBPoints = 0;
+    classicPBSource = AllTimeBest;
 }
 
 bool RespawnTracker(){
@@ -457,6 +462,11 @@ int GetPointReq(int level) {
     return val;
 }
 
+int GetSkipCost(int count){
+    int val = 5 * (count + 1);
+    return val;
+}
+
 void Render(){
     if(!mapAccess){return;}
     auto app = cast<CTrackMania>(GetApp());
@@ -557,21 +567,18 @@ void Render(){
         }
         else if(ClassicActive) {
             //Classic started
-            //UI::ButtonColored("Start", disabledHue , disabledSat, disabledVal, scale);
             SettingsCheck();
             if(PBPoints > AllTimeBest){
-                if (curSkips > 0){
-                    UI::Text("Classic PB: " + PBPoints + " (" + curSkips + PBSkipString);
-                }
-                else{
-                    UI::Text("Classic PB: " + PBPoints);
-                }
-            }
-            else if(PBSkips > 0){
-                UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + PBSkipString);
+                classicPBSource = PBPoints;
             }
             else {
-                UI::Text("Classic PB: " + AllTimeBest);
+                classicPBSource = AllTimeBest;
+            }
+            if (PBSkips > 0){
+                    UI::Text("Classic PB: " + classicPBSource + " (" + PBSkips + PBSkipString);
+            }
+            else{
+                    UI::Text("Classic PB: " + classicPBSource);
             }
 
             if(UI::ButtonColored("Stop", enabledHue , enabledSat, enabledVal, scale)){
@@ -594,17 +601,16 @@ void Render(){
                 UI::ButtonColored("Free Skip", disabledHue , disabledSat, disabledVal, scale);
             }
 
-            if(totalPoints > 5) {
-                if (UI::ButtonColored("5-Point Skip", enabledHue , enabledSat, enabledVal, scale)){
+            if(totalPoints > GetSkipCost(curSkips)) {
+                if (UI::ButtonColored(GetSkipCost(curSkips) + "-Point Skip", enabledHue , enabledSat, enabledVal, scale)){
                     if(verboseMode){print("Attempted to 5-point skip, map time: " + curAuthor);}
-                    //SessionPBUpdate();
+                    totalPoints -= GetSkipCost(curSkips);
                     curSkips += 1;
-                    totalPoints -= 5;
                     NextMap();
                 }
             }
             else {
-                UI::ButtonColored("5-Point Skip", disabledHue , disabledSat, disabledVal, scale);
+                UI::ButtonColored(GetSkipCost(curSkips) + "-Point Skip", disabledHue , disabledSat, disabledVal, scale);
             }
 
             
