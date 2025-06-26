@@ -16,14 +16,14 @@ bool AnySkip = false;
 [Setting category="Gameplay" name="Skip Threshold" description="Minimum length a map must have to be skippable without penalty. Default is 3 minutes, time in milliseconds. (ex. 60000 = 1 minute, 180000 = 3 minutes, 300000 = 5 minutes, etc.)" min=1000]
 uint skipThreshold = 180000; //3 minutes is 180000
 
+[Setting category="Gameplay" name="Allow Custom RMC Parameters" description="When checked, custom search parameters set for RMC will be used for One-Life Challenge maps. When unchecked, the default parameters will be used. This is useful for testing purposes."]
+bool allowCustom = false; //determines whether to allow custom parameters to affect 1LC map selections
+
 [Setting category="Developers" name="Debug Mode" description="Enable/disable debug mode for 1LC. This will show the debug options in the Openplanet Plugins menu, including the ability to reset your personal best permanently."]
 bool debugMode = false;
 
 [Setting category="Developers" name="Verbose Mode" description="Enable/disable verbose logging to the Openplanet console. (Warning: this will spam the console)"]
 bool verboseMode = false; //debug mode for testing;
-
-[Setting category="Developers" name="Allow Custom RMC Parameters" description="When checked, custom search parameters set for RMC will be used for One-Life Challenge maps. When unchecked, the default parameters will be used. This is useful for testing purposes."]
-bool allowCustom = false; //determines whether to allow custom parameters to affect 1LC map selections
 
 [Setting hidden]
 int AllTimeBest = 0; //personal best from Classic Mode, saved to settings
