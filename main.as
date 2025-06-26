@@ -22,6 +22,9 @@ bool debugMode = false;
 [Setting category="Developers" name="Verbose Mode" description="Enable/disable verbose logging to the Openplanet console. (Warning: this will spam the console)"]
 bool verboseMode = false; //debug mode for testing;
 
+[Setting category="Developers" name="Allow Custom RMC Parameters" description="When checked, custom search parameters set for RMC will be used for One-Life Challenge maps. When unchecked, the default parameters will be used. This is useful for testing purposes."]
+bool allowCustom = false; //determines whether to allow custom parameters to affect 1LC map selections
+
 [Setting hidden]
 int AllTimeBest = 0; //personal best from Classic Mode, saved to settings
 
@@ -126,7 +129,7 @@ void NextMap(){
     //called any time a random map is needed, to consolidate permissions checking
     if(!mapAccess){return;}
     else{
-        MXRandom::LoadRandomMap();
+        MXRandom::LoadRandomMap(allowCustom);
         SessionPBUpdate();
     }
 }
@@ -201,7 +204,6 @@ int GetMedalEarned(){
                 HandledRun = true;
                 LastRun = time;
 
-                //NextMap();
                 return medal;
     }
     return 0;
@@ -239,7 +241,6 @@ void ResetPoints(){
         if(PBPoints > AllTimeBest){
             AllTimeBest = PBPoints;
             PBPoints = 0;
-            //PBSkips = curSkips;
             Meta::SaveSettings();
             UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
             if(verboseMode){print("New Classic Mode Best: " + AllTimeBest);}
@@ -311,7 +312,6 @@ bool RespawnTracker(){
             if(verboseMode){print("Respawns: " + CPRespawns + ", calling ResetPoints()");}
             UI::ShowNotification("One-Life Challenge", "You respawned! Your run has ended with " + totalPoints + " points.", warningColor,  10000);
             ResetPoints();
-            //ClassicActive = false;
         }
         else {
             return false;
@@ -390,7 +390,7 @@ bool SkipCheck(){
 bool SettingsCheck(){
     //checks if settings have been modified from defaults
     //false = not modified, true = modified
-    if(AnySkip != false || skipThreshold != 180000){
+    if(AnySkip != false || skipThreshold != 180000 || (MXRandom::get_WithCustomParameters() && allowCustom)){
         SettingsModified = true;
         return true;
     }
@@ -413,15 +413,6 @@ void updateProgressiveStatus(){
         return;
     }
 
-    /*
-    if(verboseMode){print("curLevel: " + curLevel + ", reqArray.length: " + reqArray.Length);}
-    if (curLevel >= reqArray.Length) {
-        progStatus = "Congratulations! You've completed all challenges. Keep playing for a high score!";
-        return;
-    }
-
-    int requiredPoints = reqArray[curLevel];
-    */
     int requiredPoints = GetPointReq(curLevel);
     int startMap = curLevel * 3 + 1;
     int endMap = startMap + 2;
@@ -525,6 +516,11 @@ void Render(){
                 try{
                     auto player = cast<MLFeed::PlayerCpInfo_V4>(RaceData.SortedPlayers_Race[0]);
                     MLFeed::SpawnStatus currentSpawnStatus = player.SpawnStatus;
+
+                    if(MXRandom::get_WithCustomParameters() && allowCustom){
+                        UI::ShowNotification("One-Life Challenge", "You have custom RMC search parameters enabled. This will affect your One-Life Challenge map selections.", warningColor,  5000);
+                    }
+
                     if(currentSpawnStatus == MLFeed::SpawnStatus::Spawning){
                         UI::ShowNotification("One-Life Challenge", "You cannot start the challenge while spawning! Try again.", warningColor,  5000);
                         if(verboseMode){print("Attempted to start while spawning!");}
@@ -542,7 +538,8 @@ void Render(){
                 }
                 catch{
                     NextMap();
-                    if(verboseMode){print("Classic started!");}
+                    if(verboseMode){print("Classic started! (scenario 2)");}
+                    ClassicInit();
                     ClassicActive = true;
                     UI::End();
                     return;                
@@ -554,8 +551,13 @@ void Render(){
                 try{
                     auto player = cast<MLFeed::PlayerCpInfo_V4>(RaceData.SortedPlayers_Race[0]);
                     MLFeed::SpawnStatus currentSpawnStatus = player.SpawnStatus;
+
+                    if(MXRandom::get_WithCustomParameters() && allowCustom){
+                        UI::ShowNotification("One-Life Challenge", "You have custom RMC search parameters enabled. This will affect your One-Life Challenge map selections.", warningColor,  10000);
+                    }
+
                     if(currentSpawnStatus == MLFeed::SpawnStatus::Spawning){
-                        UI::ShowNotification("One-Life Challenge", "You cannot start the challenge while spawning! Try again.", warningColor,  5000);
+                        UI::ShowNotification("One-Life Challenge", "You cannot start the challenge while spawning! Try again.", warningColor,  10000);
                         if(verboseMode){print("Attempted to start while spawning!");}
                         UI::End();
                         return;
@@ -571,7 +573,8 @@ void Render(){
                 }
                 catch{
                     NextMap();
-                    if(verboseMode){print("Progressive started!");}
+                    if(verboseMode){print("Progressive started! (scenario 2)");}
+                    ProgressiveInit();
                     ProgressiveActive = true;
                     UI::End();
                     return;                
@@ -669,7 +672,6 @@ void Render(){
             if(totalPoints > 5) {
                 if (UI::ButtonColored("5-Point Skip", enabledHue , enabledSat, enabledVal, scale)){
                     if(verboseMode){print("Attempted to 5-point skip, map time: " + curAuthor);}
-                    //SessionPBUpdate();
                     curSkips += 1;
                     totalPoints -= 5;
                     NextMap();
@@ -679,8 +681,6 @@ void Render(){
                 UI::ButtonColored("5-Point Skip", disabledHue , disabledSat, disabledVal, scale);
             }
         }
-
-        
         UI::End();
     }
 }
