@@ -47,7 +47,7 @@ void RenderGameplayTab(){
     }
 }
 
-[SettingsTab name="Developers" order="1" icon=""]
+[SettingsTab name="Developers" order="1" icon="Code"]
 void RenderDevelopersTab(){
     if(UI::Button("Reset to default")){
         debugMode = false;
