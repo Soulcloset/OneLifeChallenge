@@ -1,13 +1,9 @@
 /*
     One-Life Challenge
     by Soulcloset
-
-    TODO:
-    - Move skip settings to Developers tab & make skipThreshold conditional on AnySkip being false
-        - learn how to display text in settings menu?
 */
 
-[Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
+[Setting hidden]
 bool WindowVisible = true;
 
 [Setting hidden]
@@ -19,36 +15,10 @@ uint skipThreshold = 180000; //3 minutes is 180000
 [Setting hidden]
 bool allowCustom = false; //determines whether to allow custom parameters to affect 1LC map selections
 
-[SettingsTab name="Gameplay" order="1" icon="Gamepad"]
-void RenderGameplayTab(){
-    if(UI::Button("Reset to default")){
-        AnySkip = false;
-        skipThreshold = 180000; 
-        allowCustom = false;
-    }
-    AnySkip = UI::Checkbox("Unrestricted Skips", AnySkip);
-    if(!AnySkip){
-        //UI::Text("Minimum map length that can be skipped for free (and without using a Skip Token if available):");
-        skipThreshold = UI::InputInt("Skip Threshold", skipThreshold, 1);
-        UI::Text("You may skip maps with an Author time of " + (Time::Format(skipThreshold, true, true, false, true)) + " or longer without using a Skip Token.");
-    }
-    allowCustom = UI::Checkbox("Allow Custom RMC Parameters", allowCustom);
-}
-
-/*
-[Setting category="Gameplay" name="Unrestricted Skips" description="When checked, all maps can be skipped without penalty. When unchecked, you may only skip maps that are longer than the skip threshold."]
-bool AnySkip = false;
-
-[Setting category="Gameplay" name="Skip Threshold" description="Minimum length a map must have to be skippable without penalty. Default is 3 minutes, time in milliseconds. (ex. 60000 = 1 minute, 180000 = 3 minutes, 300000 = 5 minutes, etc.)" min=1000]
-uint skipThreshold = 180000; //3 minutes is 180000
-
-[Setting category="Gameplay" name="Allow Custom RMC Parameters" description="When checked, custom search parameters set for RMC will be used for One-Life Challenge maps. When unchecked, the default parameters will be used. This is useful for testing purposes."]
-bool allowCustom = false; //determines whether to allow custom parameters to affect 1LC map selections
-*/
-[Setting category="Developers" name="Debug Mode" description="Enable/disable debug mode for 1LC. This will show the debug options in the Openplanet Plugins menu, including the ability to reset your personal best permanently."]
+[Setting hidden]
 bool debugMode = false;
 
-[Setting category="Developers" name="Verbose Mode" description="Enable/disable verbose logging to the Openplanet console. (Warning: this will spam the console)"]
+[Setting hidden]
 bool verboseMode = false; //debug mode for testing;
 
 [Setting hidden]
@@ -59,6 +29,39 @@ int PBSkips = 0; //number of skips that have been used in the ClassicBest run in
 
 [Setting hidden]
 int ProgressiveBest = 0; //personal best from Progressive Mode, saved to settings
+
+[SettingsTab name="Gameplay" order="0" icon="Gamepad"]
+void RenderGameplayTab(){
+    if(UI::Button("Reset to default")){
+        AnySkip = false;
+        skipThreshold = 180000; 
+        allowCustom = false;
+    }
+    UI::SameLine();
+    WindowVisible = UI::Checkbox("Show/Hide Window", WindowVisible);
+    UI::Separator();
+    AnySkip = UI::Checkbox("Unrestricted Skips", AnySkip);
+    if(!AnySkip){
+        //UI::Text("Minimum map length that can be skipped for free (and without using a Skip Token if available):");
+        skipThreshold = UI::InputInt("Skip Threshold", skipThreshold, 1);
+        UI::TextWrapped("You may skip maps with an Author time of " + (Time::Format(skipThreshold, true, true, false, true)) + " or longer without using a Skip Token.");
+    }
+    allowCustom = UI::Checkbox("Allow Custom RMC Parameters", allowCustom);
+    if(allowCustom && MXRandom::get_WithCustomParameters()){
+        UI::TextWrapped("You are currently using custom search parameters. Visit ManiaExchange Random Map Picker's settings to change or disable.");
+    }
+}
+
+[SettingsTab name="Developers" order="1" icon=""]
+void RenderDevelopersTab(){
+    if(UI::Button("Reset to default")){
+        debugMode = false;
+        verboseMode = false;
+    }
+    UI::Separator();
+    debugMode = UI::Checkbox("Debug Mode", debugMode);
+    verboseMode = UI::Checkbox("Verbose Logging", verboseMode);
+}
 
 const bool mapAccess = Permissions::PlayLocalMap(); //can the current login load arbitrary maps?
 
