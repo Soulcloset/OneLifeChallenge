@@ -10,6 +10,32 @@
 [Setting category="General" name="Show/Hide Window" description="When checked, the 1LC window will be visible."]
 bool WindowVisible = true;
 
+[Setting hidden]
+bool AnySkip = false;
+
+[Setting hidden]
+uint skipThreshold = 180000; //3 minutes is 180000
+
+[Setting hidden]
+bool allowCustom = false; //determines whether to allow custom parameters to affect 1LC map selections
+
+[SettingsTab name="Gameplay" order="1" icon="Gamepad"]
+void RenderGameplayTab(){
+    if(UI::Button("Reset to default")){
+        AnySkip = false;
+        skipThreshold = 180000; 
+        allowCustom = false;
+    }
+    AnySkip = UI::Checkbox("Unrestricted Skips", AnySkip);
+    if(!AnySkip){
+        //UI::Text("Minimum map length that can be skipped for free (and without using a Skip Token if available):");
+        skipThreshold = UI::InputInt("Skip Threshold", skipThreshold, 1);
+        UI::Text("You may skip maps with an Author time of " + (Time::Format(skipThreshold, true, true, false, true)) + " or longer without using a Skip Token.");
+    }
+    allowCustom = UI::Checkbox("Allow Custom RMC Parameters", allowCustom);
+}
+
+/*
 [Setting category="Gameplay" name="Unrestricted Skips" description="When checked, all maps can be skipped without penalty. When unchecked, you may only skip maps that are longer than the skip threshold."]
 bool AnySkip = false;
 
@@ -18,7 +44,7 @@ uint skipThreshold = 180000; //3 minutes is 180000
 
 [Setting category="Gameplay" name="Allow Custom RMC Parameters" description="When checked, custom search parameters set for RMC will be used for One-Life Challenge maps. When unchecked, the default parameters will be used. This is useful for testing purposes."]
 bool allowCustom = false; //determines whether to allow custom parameters to affect 1LC map selections
-
+*/
 [Setting category="Developers" name="Debug Mode" description="Enable/disable debug mode for 1LC. This will show the debug options in the Openplanet Plugins menu, including the ability to reset your personal best permanently."]
 bool debugMode = false;
 
@@ -26,10 +52,10 @@ bool debugMode = false;
 bool verboseMode = false; //debug mode for testing;
 
 [Setting hidden]
-int AllTimeBest = 0; //personal best from Classic Mode, saved to settings
+int ClassicBest = 0; //personal best from Classic Mode, saved to settings
 
 [Setting hidden]
-int PBSkips = 0; //number of skips that have been used in the AllTimeBest run in Classic Mode
+int PBSkips = 0; //number of skips that have been used in the ClassicBest run in Classic Mode
 
 [Setting hidden]
 int ProgressiveBest = 0; //personal best from Progressive Mode, saved to settings
@@ -42,20 +68,18 @@ bool ProgressiveActive = false; //marks whether progressive mode is active
 bool HandledRun = false;
 int curTime = -1;
 int tempPoints = 0; //0 is an incomplete map
-int LastRun = -1;
 int totalPoints = 0; //current run's running point total
 int PBPoints = 0; //session PB
 int curAuthor = -1;
 int curSkips = 0;
-string medalMessage = "";
-string PBSkipString = " skips)";
+int classicPBSource = ClassicBest;
 bool SettingsModified = false; //used to check if the settings have been modified from defaults in the current run
 
 string curMap = "";
 bool spawnLatch = false;
 bool resetProtection = false;
 
-//progressive mode variables
+//gameplay variables
 int SkipTokens = 0; //Progressive Mode number of free skips available
 int mapCounter = 0; //counts how many maps have been played this run
 int skipReason = 0; //0 = longer than threshold, 1 = skip token should be used
@@ -73,7 +97,7 @@ float disabledVal = 0.31;
 float enabledHue = 336.0;
 float enabledSat = 0.95;
 float enabledVal = 0.80;
-int classicPBSource = AllTimeBest;
+
 
 void Main()
 {
@@ -141,7 +165,6 @@ int GetMedalEarned(){
     CSmArenaRulesMode@ script = cast<CSmArenaRulesMode>(app.PlaygroundScript);
     auto map = app.RootMap;
     int medal = 0;
-    int authorTime = -1;
     int goldTime = -1;
     int silverTime = -1;
     int bronzeTime = -1;
@@ -149,8 +172,7 @@ int GetMedalEarned(){
 
     //set function vars for each medal time whenever a map is loaded
     if(map!is null){
-    authorTime = map.TMObjective_AuthorTime;
-    curAuthor = authorTime;
+    curAuthor = map.TMObjective_AuthorTime;
     goldTime = map.TMObjective_GoldTime;
     silverTime = map.TMObjective_SilverTime;
     bronzeTime = map.TMObjective_BronzeTime;
@@ -183,7 +205,7 @@ int GetMedalEarned(){
                 return 0;
     } else if (time != -1) {
                 // run finished, points: nomedal = 1, bronze = 2, silver = 3, gold = 4, author = 5
-                if(time <= authorTime) {
+                if(time <= curAuthor) {
                     medal = 5;
                     if(ProgressiveActive){
                         SkipTokens++;
@@ -202,7 +224,6 @@ int GetMedalEarned(){
                 else medal = 1;
 
                 HandledRun = true;
-                LastRun = time;
 
                 return medal;
     }
@@ -238,12 +259,12 @@ void ResetPoints(){
     //check if current point value is your session PB
     SessionPBUpdate();
     if(ClassicActive){
-        if(PBPoints > AllTimeBest){
-            AllTimeBest = PBPoints;
+        if(PBPoints > ClassicBest){
+            ClassicBest = PBPoints;
             PBPoints = 0;
             Meta::SaveSettings();
-            UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + AllTimeBest + ".", successColor,  10000);
-            if(verboseMode){print("New Classic Mode Best: " + AllTimeBest);}
+            UI::ShowNotification("One-Life Challenge", "GG! Your new Personal Best is " + ClassicBest + ".", successColor,  10000);
+            if(verboseMode){print("New Classic Mode Best: " + ClassicBest);}
         }
         ClassicInit();
     }
@@ -290,7 +311,7 @@ void ClassicInit(){
     SkipTokens = 1;
     mapCounter = 0;
     PBPoints = 0;
-    classicPBSource = AllTimeBest;
+    classicPBSource = ClassicBest;
 }
 
 bool RespawnTracker(){
@@ -492,10 +513,10 @@ void Render(){
         else {
             UI::Text("Choose a Mode:");
             if(PBSkips > 0){
-                UI::Text("Classic PB: " + AllTimeBest + " (" + PBSkips + PBSkipString);
+                UI::Text("Classic PB: " + ClassicBest + " (" + PBSkips + " skips)");
             }
             else {
-                UI::Text("Classic PB: " + AllTimeBest);
+                UI::Text("Classic PB: " + ClassicBest);
             }
             UI::Text("Challenge PB: " + ProgressiveBest);
         }
@@ -586,14 +607,14 @@ void Render(){
         else if(ClassicActive) {
             //Classic started
             SettingsCheck();
-            if(PBPoints > AllTimeBest){
+            if(PBPoints > ClassicBest){
                 classicPBSource = PBPoints;
             }
             else {
-                classicPBSource = AllTimeBest;
+                classicPBSource = ClassicBest;
             }
             if (PBSkips > 0){
-                    UI::Text("Classic PB: " + classicPBSource + " (" + PBSkips + PBSkipString);
+                    UI::Text("Classic PB: " + classicPBSource + " (" + PBSkips + " skips)");
             }
             else{
                     UI::Text("Classic PB: " + classicPBSource);
@@ -710,9 +731,9 @@ void RenderMenu()
             }
         }
         if (UI::MenuItem("1LC - Reset Classic Mode PB (PERMANENT!)")){
-            if(verboseMode){print("Personal Best was " + AllTimeBest + ", reset to 0");}
-            UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + AllTimeBest + ". It has now been reset to 0.", warningColor,  5000);
-            AllTimeBest = 0;
+            if(verboseMode){print("Personal Best was " + ClassicBest + ", reset to 0");}
+            UI::ShowNotification("One-Life Challenge", "Your Personal Best was " + ClassicBest + ". It has now been reset to 0.", warningColor,  5000);
+            ClassicBest = 0;
             PBSkips = 0;
             PBPoints = 0;
             Meta::SaveSettings();
