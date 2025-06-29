@@ -1,6 +1,7 @@
 //ui variables
 vec2 scale = vec2(100, 40);
 vec2 bigScale = vec2(210,40);
+int padAmount = 10;
 float[] disabledColor = {336.0, 0.98, 0.31}; //hue, saturation, value
 float[] enabledColor = {0.9472f, 0.87f, 0.86f};
 float[] skippableColor = {0.33f, 0.6f, 0.6f};
@@ -14,14 +15,15 @@ void Render(){
 
     if (WindowVisible) {
 
-        UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(10, 10));
+        UI::PushStyleVar(UI::StyleVar::WindowPadding, vec2(padAmount, padAmount));
         UI::PushStyleVar(UI::StyleVar::WindowRounding, 10.0);
-        UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(10, 6));
+        UI::PushStyleVar(UI::StyleVar::FramePadding, vec2(padAmount, 6));
         UI::PushStyleVar(UI::StyleVar::WindowTitleAlign, vec2(.5, .5));
 
         UI::Begin("One-Life Challenge", UI::WindowFlags::AlwaysAutoResize | UI::WindowFlags::NoScrollbar | UI::WindowFlags::NoCollapse | UI::WindowFlags::NoResize);
-        
+
         if(SettingsModified){
+            UI::SetCursorPosX(UI::GetCursorPos().x - (padAmount / 2));
             UI::Text(Icons::Times + "Settings Modified");
         }
         if(curLevel > 20){
@@ -137,19 +139,20 @@ void Render(){
             else {
                 classicPBSource = ClassicBest;
             }
-            
+
             if (PBSkips > 0){
                     UI::Text("Classic PB: " + classicPBSource + " (" + PBSkips + " skips)");
             }
             else{
                     UI::Text("Classic PB: " + classicPBSource);
             }
-
+            UI::SeparatorTextOpenplanet("");
             if(UI::ButtonColored("Stop", enabledColor[0] , enabledColor[1], enabledColor[2], bigScale)){
                 ResetPoints();
                 EndUI();
                 return;
             }
+
             if(SkipCheck()){
                 if (UI::ButtonColored("Free Skip", skippableColor[0] , skippableColor[1], skippableColor[2], scale)){
                     if(verboseMode){print("Attempted to free skip, map time: " + curAuthor + " , Skip Tokens: " + SkipTokens);}
